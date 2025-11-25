@@ -1,36 +1,181 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎵 Groovr
 
-## Getting Started
+Groovr est un réseau social dédié aux passionnés de vinyles. Partagez votre collection, découvrez de nouveaux albums et connectez-vous avec une communauté qui partage votre passion pour la musique et les vinyles.
 
-First, run the development server:
+## 📋 Description
 
+Groovr permet aux collectionneurs de vinyles de :
+- **Cataloguer leur collection** : Ajoutez vos vinyles, notez vos écoutes et suivez l'évolution de votre collection
+- **Partager avec la communauté** : Postez vos dernières acquisitions, échangez des recommandations
+- **Découvrir de nouveaux albums** : Explorez les collections des autres utilisateurs
+- **Créer une wishlist** : Gardez une trace des vinyles que vous souhaitez acquérir
+
+## 🛠️ Stack technique
+
+- **Frontend** : Next.js 16 (App Router) avec React 19
+- **Langage** : TypeScript
+- **Styling** : Tailwind CSS 4
+- **Backend** : Firebase
+  - Authentication (Firebase Auth)
+  - Database (Firestore)
+  - Storage (Firebase Storage)
+- **API externe** : Spotify API (à venir - Phase 4)
+
+## 🚀 Installation
+
+### Prérequis
+
+- Node.js 20+
+- npm ou yarn
+- Un compte Firebase
+- (Futur) Un compte développeur Spotify
+
+### Étapes d'installation
+
+1. Clonez le repository :
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/votre-username/groovr.git
+cd groovr
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Installez les dépendances :
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Créez un fichier `.env.local` à la racine du projet et ajoutez vos credentials Firebase :
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=votre_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=votre_project_id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=votre_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=votre_project_id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=votre_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=votre_app_id
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🔑 Obtenir les credentials
 
-## Learn More
+### Firebase
 
-To learn more about Next.js, take a look at the following resources:
+1. Allez sur [Firebase Console](https://console.firebase.google.com/)
+2. Créez un nouveau projet ou sélectionnez un projet existant
+3. Dans les paramètres du projet, ajoutez une application web
+4. Copiez la configuration Firebase et ajoutez les valeurs dans votre `.env.local`
+5. Activez les services nécessaires :
+   - **Authentication** : Email/Password
+   - **Firestore Database** : Mode production
+   - **Storage** : Mode production
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Spotify (Phase 4 - à venir)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Allez sur [Spotify for Developers](https://developer.spotify.com/dashboard)
+2. Créez une nouvelle application
+3. Notez votre Client ID et Client Secret
+4. Ajoutez-les dans votre `.env.local` :
+```env
+SPOTIFY_CLIENT_ID=votre_client_id
+SPOTIFY_CLIENT_SECRET=votre_client_secret
+```
 
-## Deploy on Vercel
+## 📁 Structure du projet
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+groovr/
+├── src/
+│   ├── app/                # App Router de Next.js
+│   │   ├── layout.tsx      # Layout principal avec navigation et footer
+│   │   ├── page.tsx        # Page d'accueil
+│   │   └── globals.css     # Styles globaux et configuration Tailwind
+│   ├── components/         # Composants React réutilisables
+│   ├── lib/               # Utilitaires et configurations
+│   │   └── firebase.ts    # Configuration Firebase
+│   └── types/             # Types TypeScript
+├── public/                # Fichiers statiques
+├── .env.local            # Variables d'environnement (non versionné)
+├── .env.example          # Template des variables d'environnement
+├── package.json          # Dépendances et scripts
+└── README.md            # Documentation
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 💻 Commandes disponibles
+
+### Développement
+```bash
+npm run dev
+```
+Lance le serveur de développement sur [http://localhost:3000](http://localhost:3000)
+
+### Build
+```bash
+npm run build
+```
+Crée une build optimisée pour la production
+
+### Production
+```bash
+npm run start
+```
+Lance le serveur de production (après avoir exécuté `npm run build`)
+
+### Lint
+```bash
+npm run lint
+```
+Vérifie la qualité du code avec ESLint
+
+## 🎨 Design
+
+Groovr utilise un design dark mode par défaut, inspiré de l'ambiance des vinyles et des soirées d'écoute :
+
+### Palette de couleurs
+- **Primary** : Orange `#E67E22` - Énergie et passion musicale
+- **Secondary** : Marron `#8B4513` - Référence au vinyle et au vintage
+- **Background** : Noir `#1A1A1A` - Ambiance dark
+- **Text** : Blanc cassé `#F5F5F5` - Confort de lecture
+
+### Inspiration
+- Interface type Spotify pour l'expérience utilisateur
+- Feed social type Instagram pour le partage de contenu
+- Organisation type Discogs pour les collections
+
+## 🗺️ Roadmap
+
+### Phase 1 - Setup et authentification (en cours)
+- [x] Configuration du projet Next.js
+- [x] Configuration Firebase
+- [x] Design system et thème
+- [x] Layout et navigation
+- [ ] Pages d'authentification (login/signup)
+
+### Phase 2 - Gestion de la collection
+- [ ] Création de profil utilisateur
+- [ ] Ajout manuel de vinyles
+- [ ] Visualisation de la collection
+- [ ] Système de wishlist
+
+### Phase 3 - Social features
+- [ ] Feed d'actualités
+- [ ] Posts et partages
+- [ ] Commentaires et likes
+- [ ] Système de follow
+
+### Phase 4 - Intégration Spotify
+- [ ] Recherche d'albums via Spotify API
+- [ ] Récupération des métadonnées
+- [ ] Recommandations personnalisées
+
+## 🤝 Contribution
+
+Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou une pull request.
+
+## 📄 Licence
+
+Ce projet est sous licence MIT.
+
+## 📧 Contact
+
+Pour toute question ou suggestion, contactez-nous via les issues GitHub.
+
+---
+
+Fait avec ❤️ par les passionnés de vinyles
