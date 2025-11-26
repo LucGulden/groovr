@@ -10,6 +10,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { userCache } from './cache';
 import type { CreateUserProfileData, UpdateUserProfileData, User, ProfileStats } from '@/types/user';
 
 const USERS_COLLECTION = 'users';
@@ -87,11 +88,18 @@ export async function getUserByUsername(username: string): Promise<User | null> 
 
 /**
  * Récupère un utilisateur par son UID
+ * Utilise un cache pour éviter les requêtes répétées
  * @param uid - ID unique de l'utilisateur
  * @returns L'utilisateur trouvé ou null
  */
 export async function getUserByUid(uid: string): Promise<User | null> {
   try {
+    // Vérifier le cache d'abord
+    const cached = userCache.get(uid);
+    if (cached) {
+      return cached;
+    }
+
     const userRef = doc(db, USERS_COLLECTION, uid);
     const userDoc = await getDoc(userRef);
 
@@ -99,7 +107,12 @@ export async function getUserByUid(uid: string): Promise<User | null> {
       return null;
     }
 
-    return userDoc.data() as User;
+    const user = userDoc.data() as User;
+
+    // Mettre en cache
+    userCache.set(uid, user);
+
+    return user;
   } catch (error) {
     console.error('Erreur lors de la récupération de l\'utilisateur:', error);
     throw new Error('Impossible de récupérer l\'utilisateur');

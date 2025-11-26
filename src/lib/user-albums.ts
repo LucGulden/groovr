@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { getAlbumById } from './albums';
+import { createPost } from './posts';
 import type {
   UserAlbum,
   UserAlbumWithDetails,
@@ -50,6 +51,14 @@ export async function addToCollection(
     };
 
     await setDoc(newDocRef, userAlbumData);
+
+    // Créer automatiquement un post pour partager l'ajout
+    try {
+      await createPost(userId, 'collection_add', albumId);
+    } catch (postError) {
+      console.error('Erreur lors de la création du post:', postError);
+      // Ne pas faire échouer l'ajout si la création du post échoue
+    }
 
     return {
       id: newDocRef.id,
@@ -88,6 +97,14 @@ export async function addToWishlist(
     };
 
     await setDoc(newDocRef, userAlbumData);
+
+    // Créer automatiquement un post pour partager l'ajout
+    try {
+      await createPost(userId, 'wishlist_add', albumId);
+    } catch (postError) {
+      console.error('Erreur lors de la création du post:', postError);
+      // Ne pas faire échouer l'ajout si la création du post échoue
+    }
 
     return {
       id: newDocRef.id,

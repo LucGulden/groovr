@@ -9,6 +9,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { albumCache } from './cache';
 import type { Album, SpotifyAlbumData } from '@/types/album';
 
 const ALBUMS_COLLECTION = 'albums';
@@ -67,11 +68,18 @@ export async function getOrCreateAlbum(spotifyData: SpotifyAlbumData): Promise<A
 
 /**
  * Récupère un album par son ID Firestore
+ * Utilise un cache pour éviter les requêtes répétées
  * @param albumId - ID Firestore de l'album
  * @returns L'album ou null s'il n'existe pas
  */
 export async function getAlbumById(albumId: string): Promise<Album | null> {
   try {
+    // Vérifier le cache d'abord
+    const cached = albumCache.get(albumId);
+    if (cached) {
+      return cached;
+    }
+
     const albumRef = doc(db, ALBUMS_COLLECTION, albumId);
     const albumDoc = await getDoc(albumRef);
 
@@ -79,10 +87,15 @@ export async function getAlbumById(albumId: string): Promise<Album | null> {
       return null;
     }
 
-    return {
+    const album = {
       id: albumDoc.id,
       ...albumDoc.data(),
     } as Album;
+
+    // Mettre en cache
+    albumCache.set(albumId, album);
+
+    return album;
   } catch (error) {
     console.error('Erreur lors de la récupération de l\'album:', error);
     throw new Error('Impossible de récupérer l\'album');

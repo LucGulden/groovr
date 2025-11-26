@@ -73,37 +73,44 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Collection des posts (pour Phase 7 - Feed social)
+    // Collection des posts (Phase 7 - Feed social)
     match /posts/{postId} {
-      // Lecture : tout le monde authentifié
+      // Lecture : tous les utilisateurs authentifiés
       allow read: if request.auth != null;
 
-      // Création : tout utilisateur authentifié
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // Création : seulement si userId correspond à l'utilisateur authentifié
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
 
-      // Modification/Suppression : seulement l'auteur
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Modification : permettre l'update des compteurs (likesCount, commentsCount)
+      // Update autorisé pour tout utilisateur authentifié (nécessaire pour les compteurs)
+      allow update: if request.auth != null;
+
+      // Suppression : seulement le propriétaire du post
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
-    // Collection des likes
+    // Collection des likes (Phase 7 - Feed social)
     match /likes/{likeId} {
+      // Lecture : tous les utilisateurs authentifiés
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+
+      // Création : seulement si userId correspond à l'utilisateur authentifié
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Suppression : seulement le propriétaire du like
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
-    // Collection des commentaires
+    // Collection des commentaires (Phase 7 - Feed social)
     match /comments/{commentId} {
+      // Lecture : tous les utilisateurs authentifiés
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-    }
 
-    // Collection des follows
-    match /follows/{followId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.followerId;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.followerId;
+      // Création : seulement si userId correspond à l'utilisateur authentifié
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Suppression : seulement le propriétaire du commentaire
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
   }
 }
