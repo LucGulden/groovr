@@ -85,3 +85,17 @@ a, button, input, textarea, select {
   background: var(--primary);
   color: var(--background);
 }
+
+/* Animation shimmer pour les images en chargement */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}

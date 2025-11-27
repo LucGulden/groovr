@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AlbumCard from './AlbumCard';
 import Button from './Button';
 import type { UserAlbumWithDetails, CollectionType } from '@/types/collection';
@@ -18,6 +18,8 @@ export default function AlbumGrid({
   onMove,
   loading = false,
 }: AlbumGridProps) {
+  const [processingAlbum, setProcessingAlbum] = useState<string | null>(null);
+  const [actionType, setActionType] = useState<'remove' | 'move' | null>(null);
   // Loading skeletons
   if (loading) {
     return (
@@ -69,46 +71,62 @@ export default function AlbumGrid({
               {/* Bouton déplacer vers collection (seulement pour wishlist) */}
               {type === 'wishlist' && onMove && (
                 <Button
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.stopPropagation();
-                    onMove(userAlbum.albumId);
+                    setProcessingAlbum(userAlbum.albumId);
+                    setActionType('move');
+                    await onMove(userAlbum.albumId);
+                    setProcessingAlbum(null);
+                    setActionType(null);
                   }}
                   variant="primary"
                   className="w-full"
+                  loading={processingAlbum === userAlbum.albumId && actionType === 'move'}
+                  disabled={processingAlbum === userAlbum.albumId}
                 >
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    J'ai cet album
-                  </span>
+                  {!(processingAlbum === userAlbum.albumId && actionType === 'move') && (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      J'ai cet album
+                    </span>
+                  )}
                 </Button>
               )}
 
               {/* Bouton supprimer */}
               <Button
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  onRemove(userAlbum.albumId);
+                  setProcessingAlbum(userAlbum.albumId);
+                  setActionType('remove');
+                  await onRemove(userAlbum.albumId);
+                  setProcessingAlbum(null);
+                  setActionType(null);
                 }}
                 variant="outline"
                 className="w-full border-red-500/30 text-red-500 hover:border-red-500 hover:bg-red-500/10"
+                loading={processingAlbum === userAlbum.albumId && actionType === 'remove'}
+                disabled={processingAlbum === userAlbum.albumId}
               >
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                  Retirer
-                </span>
+                {!(processingAlbum === userAlbum.albumId && actionType === 'remove') && (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    Retirer
+                  </span>
+                )}
               </Button>
             </div>
           }

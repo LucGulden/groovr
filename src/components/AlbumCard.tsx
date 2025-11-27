@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { AlbumSearchResult } from '@/types/album';
 
 interface AlbumCardProps {
@@ -8,6 +8,7 @@ interface AlbumCardProps {
 }
 
 export default function AlbumCard({ album, actions, onClick }: AlbumCardProps) {
+  const [imageLoaded, setImageLoaded] = useState(false);
   return (
     <div
       className="group relative overflow-hidden rounded-lg border border-[var(--background-lighter)] bg-[var(--background-light)] transition-all hover:border-[var(--primary)] hover:shadow-lg hover:shadow-[var(--primary)]/20"
@@ -15,11 +16,21 @@ export default function AlbumCard({ album, actions, onClick }: AlbumCardProps) {
     >
       {/* Pochette */}
       <div className="relative aspect-square w-full overflow-hidden bg-[var(--background)]">
+        {/* Shimmer placeholder */}
+        {!imageLoaded && (
+          <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-[var(--background-lighter)] via-[var(--background)] to-[var(--background-lighter)] bg-[length:200%_100%]">
+            <div className="h-full w-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+          </div>
+        )}
+
         <img
           src={album.coverUrl}
           alt={`${album.title} par ${album.artist}`}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+          className={`h-full w-full object-cover transition-all duration-300 group-hover:scale-110 ${
+            imageLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
           loading="lazy"
+          onLoad={() => setImageLoaded(true)}
         />
 
         {/* Overlay au hover */}

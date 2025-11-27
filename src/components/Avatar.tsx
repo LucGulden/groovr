@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface AvatarProps {
   src?: string | null;
@@ -43,6 +43,8 @@ function getInitials(username: string): string {
 }
 
 export default function Avatar({ src, username, size = 'md', className = '' }: AvatarProps) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   const sizeClasses = {
     sm: 'h-8 w-8 text-xs',
     md: 'h-10 w-10 text-sm',
@@ -55,11 +57,25 @@ export default function Avatar({ src, username, size = 'md', className = '' }: A
 
   if (src) {
     return (
-      <img
-        src={src}
-        alt={username}
-        className={`${sizeClasses[size]} rounded-full border-2 border-[var(--primary)] object-cover ${className}`}
-      />
+      <div className="relative">
+        {/* Shimmer placeholder */}
+        {!imageLoaded && (
+          <div className={`${sizeClasses[size]} rounded-full border-2 border-[var(--primary)] overflow-hidden ${className}`}>
+            <div className="h-full w-full animate-pulse bg-gradient-to-r from-[var(--background-lighter)] via-[var(--background)] to-[var(--background-lighter)]">
+              <div className="h-full w-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+            </div>
+          </div>
+        )}
+
+        <img
+          src={src}
+          alt={username}
+          className={`${sizeClasses[size]} rounded-full border-2 border-[var(--primary)] object-cover transition-opacity duration-300 ${
+            imageLoaded ? 'opacity-100' : 'opacity-0 absolute top-0 left-0'
+          } ${className}`}
+          onLoad={() => setImageLoaded(true)}
+        />
+      </div>
     );
   }
 

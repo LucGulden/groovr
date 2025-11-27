@@ -27,6 +27,7 @@ export default function PostCard({ post, currentUserId, onDelete }: PostCardProp
   const [commentText, setCommentText] = useState('');
   const [isCommenting, setIsCommenting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const isOwner = currentUserId === post.userId;
 
@@ -175,33 +176,68 @@ export default function PostCard({ post, currentUserId, onDelete }: PostCardProp
           <button
             onClick={handleDeletePost}
             disabled={isDeleting}
-            className="flex-shrink-0 text-[var(--foreground-muted)] hover:text-red-500 transition-colors disabled:opacity-50"
-            title="Supprimer le post"
+            className="flex-shrink-0 text-[var(--foreground-muted)] hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isDeleting ? "Suppression en cours..." : "Supprimer le post"}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
+            {isDeleting ? (
+              <svg
+                className="h-5 w-5 animate-spin text-red-500"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+            )}
           </button>
         )}
       </div>
 
       {/* Album Cover */}
-      <div className="mb-4">
+      <div className="mb-4 relative">
+        {/* Shimmer placeholder */}
+        {!imageLoaded && (
+          <div className="w-full max-w-md mx-auto aspect-square rounded-xl overflow-hidden">
+            <div className="h-full w-full animate-pulse bg-gradient-to-r from-[var(--background-lighter)] via-[var(--background)] to-[var(--background-lighter)] bg-[length:200%_100%]">
+              <div className="h-full w-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+            </div>
+          </div>
+        )}
+
         <img
           src={post.album.coverUrl}
           alt={`${post.album.title} - ${post.album.artist}`}
-          className="w-full max-w-md mx-auto rounded-xl shadow-md"
+          className={`w-full max-w-md mx-auto rounded-xl shadow-md transition-opacity duration-300 ${
+            imageLoaded ? 'opacity-100' : 'opacity-0 absolute'
+          }`}
+          onLoad={() => setImageLoaded(true)}
         />
       </div>
 
@@ -213,21 +249,44 @@ export default function PostCard({ post, currentUserId, onDelete }: PostCardProp
           disabled={!currentUserId || isLiking}
           className="flex items-center gap-2 text-[var(--foreground-muted)] hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`h-6 w-6 transition-all ${
-              isLiked ? 'fill-red-500 text-red-500' : 'fill-none'
-            }`}
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-            />
-          </svg>
+          {isLiking ? (
+            <svg
+              className="h-6 w-6 animate-spin text-red-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={`h-6 w-6 transition-all ${
+                isLiked ? 'fill-red-500 text-red-500' : 'fill-none'
+              }`}
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              />
+            </svg>
+          )}
           <span className={isLiked ? 'text-red-500 font-semibold' : ''}>
             {likesCount}
           </span>
