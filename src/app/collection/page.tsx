@@ -1,24 +1,23 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
-import AlbumGrid from '@/components/AlbumGrid';
+import AlbumCard from '@/components/AlbumCard';
 import AddAlbumModal from '@/components/AddAlbumModal';
 import Button from '@/components/Button';
-import {
-  subscribeToUserCollection,
-  removeFromCollection,
-} from '@/lib/user-albums';
-import type { UserAlbumWithDetails } from '@/types/collection';
+import { AlbumGridSkeleton } from '@/components/ui/AlbumGridSkeleton';
+import { useCollectionPagination } from '@/hooks/useCollectionPagination';
+import { removeFromCollection } from '@/lib/user-albums';
 
 export default function CollectionPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [albums, setAlbums] = useState<UserAlbumWithDetails[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [processingAlbum, setProcessingAlbum] = useState<string | null>(null);
+
+  // Intersection Observer pour infinite scroll
+  const observerTarget = useRef<HTMLDivElement>(null);
 
   // Redirection si non authentifié
   useEffect(() => {
@@ -27,31 +26,39 @@ export default function CollectionPage() {
     }
   }, [user, authLoading, router]);
 
-  // Subscribe aux changements real-time
+  // Hook de pagination
+  const {
+    albums,
+    loading,
+    loadingMore,
+    hasMore,
+    error,
+    total,
+    loadMore,
+    refresh,
+    removeAlbumFromList,
+  } = useCollectionPagination({
+    userId: user?.uid || '',
+    type: 'collection',
+  });
+
+  // Intersection Observer pour auto-load
   useEffect(() => {
-    if (!user) return;
-
-    console.log('[Collection] Abonnement aux changements real-time...');
-
-    const unsubscribe = subscribeToUserCollection(
-      user.uid,
-      (updatedAlbums) => {
-        console.log(`[Collection] Reçu ${updatedAlbums.length} albums`);
-        setAlbums(updatedAlbums);
-        setLoading(false);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMore();
+        }
       },
-      (err) => {
-        console.error('[Collection] Erreur:', err);
-        setError(err.message);
-        setLoading(false);
-      }
+      { threshold: 1.0 }
     );
 
-    return () => {
-      console.log('[Collection] Désabonnement');
-      unsubscribe();
-    };
-  }, [user]);
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loadMore]);
 
   const handleRemove = async (albumId: string) => {
     if (!user) return;
@@ -60,12 +67,16 @@ export default function CollectionPage() {
       return;
     }
 
+    setProcessingAlbum(albumId);
+
     try {
       await removeFromCollection(user.uid, albumId);
-      // Le state sera automatiquement mis à jour via onSnapshot
+      removeAlbumFromList(albumId);
     } catch (err) {
       console.error('Erreur lors de la suppression:', err);
       alert(err instanceof Error ? err.message : 'Erreur lors de la suppression');
+    } finally {
+      setProcessingAlbum(null);
     }
   };
 
@@ -90,9 +101,9 @@ export default function CollectionPage() {
             <p className="text-[var(--foreground-muted)]">
               {loading
                 ? 'Chargement...'
-                : albums.length === 0
+                : total === 0
                 ? 'Aucun album pour le moment'
-                : `${albums.length} album${albums.length > 1 ? 's' : ''} dans votre collection`}
+                : `${total} album${total > 1 ? 's' : ''} dans votre collection`}
             </p>
           </div>
 
@@ -126,23 +137,125 @@ export default function CollectionPage() {
                   clipRule="evenodd"
                 />
               </svg>
-              <span>{error}</span>
+              <span>{error.message}</span>
             </div>
+            <button
+              onClick={refresh}
+              className="mt-3 text-sm underline hover:no-underline"
+            >
+              Réessayer
+            </button>
+          </div>
+        )}
+
+        {/* Loading skeleton */}
+        {loading && <AlbumGridSkeleton count={20} />}
+
+        {/* Empty state */}
+        {!loading && albums.length === 0 && (
+          <div className="py-20 text-center">
+            <div className="mb-6 text-8xl">💿</div>
+            <h3 className="mb-3 text-2xl font-bold text-[var(--foreground)]">
+              Votre collection est vide
+            </h3>
+            <p className="mb-6 text-[var(--foreground-muted)]">
+              Commencez à ajouter vos vinyles préférés à votre collection
+            </p>
+            <div className="text-6xl opacity-20">🎵 🎶 🎸</div>
           </div>
         )}
 
         {/* Grid d'albums */}
-        <AlbumGrid
-          albums={albums}
-          type="collection"
-          onRemove={handleRemove}
-          loading={loading}
-        />
+        {!loading && albums.length > 0 && (
+          <>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {albums.map((userAlbum) => (
+                <AlbumCard
+                  key={userAlbum.id}
+                  album={userAlbum.album}
+                  actions={
+                    <div className="flex flex-col gap-2">
+                      {/* Bouton supprimer */}
+                      <Button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await handleRemove(userAlbum.albumId);
+                        }}
+                        variant="outline"
+                        className="w-full border-red-500/30 text-red-500 hover:border-red-500 hover:bg-red-500/10"
+                        loading={processingAlbum === userAlbum.albumId}
+                        disabled={processingAlbum === userAlbum.albumId}
+                      >
+                        {processingAlbum !== userAlbum.albumId && (
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                            Retirer
+                          </span>
+                        )}
+                      </Button>
+                    </div>
+                  }
+                />
+              ))}
+            </div>
+
+            {/* Intersection Observer target pour infinite scroll */}
+            {hasMore && (
+              <div ref={observerTarget} className="mt-8 flex justify-center items-center h-20">
+                {loadingMore && (
+                  <div className="flex items-center gap-2 text-[var(--foreground-muted)]">
+                    <svg
+                      className="animate-spin h-6 w-6"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    <span>Chargement...</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* End of collection message */}
+            {!hasMore && albums.length > 0 && (
+              <div className="text-center py-8 mt-8">
+                <p className="text-[var(--foreground-muted)]">
+                  Vous avez atteint la fin de votre collection
+                </p>
+              </div>
+            )}
+          </>
+        )}
 
         {/* Modal d'ajout */}
         <AddAlbumModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false);
+            // Rafraîchir la liste après ajout
+            refresh();
+          }}
           targetType="collection"
         />
       </div>
