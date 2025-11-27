@@ -1,5 +1,7 @@
 # 🎵 Groovr
 
+[![CI](https://github.com/lucgulden/groovr/actions/workflows/ci.yml/badge.svg)](https://github.com/lucgulden/groovr/actions/workflows/ci.yml)
+
 Groovr est un réseau social dédié aux passionnés de vinyles. Partagez votre collection, découvrez de nouveaux albums et connectez-vous avec une communauté qui partage votre passion pour la musique et les vinyles.
 
 ## 📋 Description
@@ -117,11 +119,19 @@ npm run start
 ```
 Lance le serveur de production (après avoir exécuté `npm run build`)
 
-### Lint
+### Qualité du code
 ```bash
-npm run lint
+npm run lint          # Vérifie la qualité du code avec ESLint
+npm run type-check    # Vérifie les types TypeScript
 ```
-Vérifie la qualité du code avec ESLint
+
+### Tests
+```bash
+npm run test          # Lance les tests unitaires (Vitest)
+npm run test:watch    # Lance les tests en mode watch
+npm run test:e2e      # Lance les tests E2E (Playwright)
+npm run test:e2e:ui   # Lance les tests E2E en mode UI
+```
 
 ## 🎨 Design
 
@@ -154,10 +164,10 @@ Groovr utilise un design dark mode par défaut, inspiré de l'ambiance des vinyl
 - [X] Système de wishlist
 
 ### Phase 3 - Social features
-- [ ] Feed d'actualités
-- [ ] Posts et partages
-- [ ] Commentaires et likes
-- [ ] Système de follow
+- [X] Feed d'actualités
+- [X] Posts et partages
+- [X] Commentaires et likes
+- [X] Système de follow
 
 ### Phase 4 - Intégration Spotify
 - [X] Recherche d'albums via Spotify API
