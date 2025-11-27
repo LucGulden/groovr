@@ -4,7 +4,7 @@
  */
 
 import { Album } from "@/types/album";
-import { User } from "firebase/auth";
+import { User } from "@/types/user";
 
 interface CacheEntry<T> {
   data: T;

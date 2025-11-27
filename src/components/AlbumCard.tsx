@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import type { AlbumSearchResult } from '@/types/album';
+import type { Album, AlbumSearchResult } from '@/types/album';
 import Image from 'next/image';
 
 interface AlbumCardProps {
-  album: AlbumSearchResult;
+  album: AlbumSearchResult | Album;
   actions?: React.ReactNode;
   onClick?: () => void;
 }

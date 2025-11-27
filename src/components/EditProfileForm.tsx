@@ -279,7 +279,7 @@ export default function EditProfileForm({ user, onSuccess }: EditProfileFormProp
         />
         <div className="mt-1 flex items-center justify-between">
           <p className="text-xs text-[var(--foreground-muted)]">
-            {formData.bio.length}/200 caractères
+            {formData.bio ? formData.bio.length : 0}/200 caractères
           </p>
           {errors.bio && (
             <p className="text-xs text-red-500">{errors.bio}</p>

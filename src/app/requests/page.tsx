@@ -141,7 +141,7 @@ export default function RequestsPage() {
                   {/* Infos utilisateur */}
                   <div className="flex-1 overflow-hidden">
                     <p className="truncate font-semibold text-[var(--foreground)]">
-                      {request.user.fullName || request.user.username}
+                      {request.user.username}
                     </p>
                     <p className="truncate text-sm text-[var(--foreground-muted)]">
                       @{request.user.username}
