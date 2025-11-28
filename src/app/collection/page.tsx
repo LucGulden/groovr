@@ -1,14 +1,19 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import AlbumCard from '@/components/AlbumCard';
-import AddAlbumModal from '@/components/AddAlbumModal';
 import Button from '@/components/Button';
 import { AlbumGridSkeleton } from '@/components/ui/AlbumGridSkeleton';
 import { useCollectionPagination } from '@/hooks/useCollectionPagination';
 import { removeFromCollection } from '@/lib/user-albums';
+
+// Dynamic import for AddAlbumModal (only loaded when modal is opened)
+const AddAlbumModal = dynamic(() => import('@/components/AddAlbumModal'), {
+  ssr: false,
+});
 
 export default function CollectionPage() {
   const { user, loading: authLoading } = useAuth();

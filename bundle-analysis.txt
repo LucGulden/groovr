@@ -1,0 +1,45 @@
+
+> groovr@0.1.0 analyze
+> cross-env ANALYZE=true next build --webpack
+
+   ▲ Next.js 16.0.4 (webpack)
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+[1mWebpack Bundle Analyzer[22m saved report to [1mc:\WorkProjects\groovr\.next\analyze\nodejs.html[22m
+
+No bundles were parsed. Analyzer will show only original module sizes from stats file.
+
+[1mWebpack Bundle Analyzer[22m saved report to [1mc:\WorkProjects\groovr\.next\analyze\edge.html[22m
+[1mWebpack Bundle Analyzer[22m saved report to [1mc:\WorkProjects\groovr\.next\analyze\client.html[22m
+ ✓ Compiled successfully in 38.9s
+   Running TypeScript ...
+   Collecting page data using 11 workers ...
+   Generating static pages using 11 workers (0/13) ...
+   Generating static pages using 11 workers (3/13) 
+   Generating static pages using 11 workers (6/13) 
+   Generating static pages using 11 workers (9/13) 
+ ✓ Generating static pages using 11 workers (13/13) in 5.6s
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/spotify/search
+├ ○ /collection
+├ ○ /feed
+├ ○ /login
+├ ƒ /profile/[username]
+├ ƒ /profile/[username]/followers
+├ ƒ /profile/[username]/following
+├ ○ /requests
+├ ○ /settings
+├ ○ /signup
+├ ○ /users
+└ ○ /wishlist
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
