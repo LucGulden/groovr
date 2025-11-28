@@ -94,12 +94,14 @@ export default function ImageOptimized({
   }
 
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      style={!fill && width && height ? { width, height } : { width: '100%', height: '100%' }}
+    >
       {/* Shimmer placeholder */}
       {!imageLoaded && (
         <div
           className={`absolute inset-0 overflow-hidden ${className}`}
-          style={!fill && width && height ? { width, height } : undefined}
         >
           <div className="h-full w-full animate-pulse bg-gradient-to-r from-[var(--background-lighter)] via-[var(--background)] to-[var(--background-lighter)] bg-[length:200%_100%]">
             <div className="h-full w-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
