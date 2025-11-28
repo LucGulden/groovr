@@ -229,7 +229,7 @@ export default function ProfilePage() {
         {/* Collection Tab */}
         {canViewAlbums && activeTab === 'feed' && (
           <>
-            <Feed userId={profileUser.uid} />
+            <Feed userId={profileUser.uid} profileFeed={true}/>
           </>
         )}
 

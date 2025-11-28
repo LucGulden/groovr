@@ -6,9 +6,10 @@ import { useFeedPagination } from '@/hooks/useFeedPagination';
 
 interface FeedProps {
   userId: string;
+  profileFeed: boolean
 }
 
-export default function Feed({ userId }: FeedProps) {
+export default function Feed({ userId, profileFeed }: FeedProps) {
   const {
     posts,
     loading,
@@ -20,7 +21,7 @@ export default function Feed({ userId }: FeedProps) {
     loadMore,
     refresh,
     handleDeletePost,
-  } = useFeedPagination(userId);
+  } = useFeedPagination(userId, profileFeed);
 
   // Intersection Observer pour infinite scroll
   const observerTarget = useRef<HTMLDivElement>(null);
@@ -149,19 +150,32 @@ export default function Feed({ userId }: FeedProps) {
             d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
           />
         </svg>
-        <h3 className="text-2xl font-bold text-[var(--foreground)] mb-3">
-          Votre feed est vide
-        </h3>
-        <p className="text-[var(--foreground-muted)] mb-6 max-w-md mx-auto">
-          Suivez des utilisateurs pour voir leur activité ! Découvrez de nouveaux
-          collectionneurs et explorez leurs vinyles.
-        </p>
-        <a
-          href="/users"
-          className="inline-block px-6 py-3 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors font-semibold"
-        >
-          Découvrir des utilisateurs
-        </a>
+        {profileFeed ? (
+          <>
+            <h3 className="text-2xl font-bold text-[var(--foreground)] mb-3">
+              Aucune activité récente
+            </h3>
+            <p className="text-[var(--foreground-muted)] mb-6 max-w-md mx-auto">
+              {`Cet utilisateur n'a pas encore d'activité visible.`}
+            </p>
+          </>
+        ) : (
+          <>
+            <h3 className="text-2xl font-bold text-[var(--foreground)] mb-3">
+              Votre feed est vide
+            </h3>
+            <p className="text-[var(--foreground-muted)] mb-6 max-w-md mx-auto">
+              Suivez des utilisateurs pour voir leur activité ! Découvrez de nouveaux
+              collectionneurs et explorez leurs vinyles.
+            </p>
+            <a
+              href="/users"
+              className="inline-block px-6 py-3 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors font-semibold"
+            >
+              Découvrir des utilisateurs
+            </a>
+          </>
+        )}
       </div>
     );
   }

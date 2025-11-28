@@ -82,6 +82,14 @@ export async function createPost(
         userId: userId,
       });
 
+      // ÉTAPE 4: Ajouter aussi dans le feed du profil
+      const profileFeedRef = doc(db, `profile_feeds/${userId}/posts`, newPostRef.id);
+      await setDoc(profileFeedRef, {
+        postId: newPostRef.id,
+        createdAt: serverTimestamp(),
+        userId: userId,
+      });
+
     } catch (fanoutError) {
       console.error('[Fan-out] Erreur lors du fan-out (post créé mais pas distribué):', fanoutError);
       // Le post est créé, mais pas distribué - on peut continuer
@@ -105,12 +113,14 @@ export async function createPost(
  */
 export async function getFeedPosts(
   userId: string,
+  profileFeed: boolean,
   limitCount: number = 20,
   lastPost?: Post
 ): Promise<PostWithDetails[]> {
   try {
+    const path = profileFeed ? `profile_feeds/${userId}/posts` : `user_feeds/${userId}/posts`;
     // ÉTAPE 1: Lire les pointeurs depuis le feed personnel de l'utilisateur
-    const userFeedRef = collection(db, `user_feeds/${userId}/posts`);
+    const userFeedRef = collection(db, path);
 
     let q = query(
       userFeedRef,
@@ -130,7 +140,7 @@ export async function getFeedPosts(
 
     const feedSnapshot = await getDocs(q);
 
-    console.log(`[Feed] Chargé ${feedSnapshot.size} pointeurs depuis user_feeds/${userId}/posts`);
+    console.log(`[Feed] Chargé ${feedSnapshot.size} pointeurs depuis ${path}`);
 
     if (feedSnapshot.empty) {
       return [];

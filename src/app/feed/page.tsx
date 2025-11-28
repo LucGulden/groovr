@@ -44,7 +44,7 @@ export default function FeedPage() {
         </div>
 
         {/* Feed */}
-        <Feed userId={user.uid} />
+        <Feed userId={user.uid} profileFeed={false} />
       </div>
     </div>
   );

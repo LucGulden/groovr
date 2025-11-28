@@ -27,7 +27,7 @@ export interface UseFeedPaginationReturn {
  * - Curseur Firestore (lastVisible document)
  * - Écoute en temps réel des nouveaux posts
  */
-export function useFeedPagination(userId: string): UseFeedPaginationReturn {
+export function useFeedPagination(userId: string, profileFeed: boolean): UseFeedPaginationReturn {
   const [posts, setPosts] = useState<PostWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -44,7 +44,7 @@ export function useFeedPagination(userId: string): UseFeedPaginationReturn {
     setError(null);
 
     try {
-      const initialPosts = await getFeedPosts(userId, INITIAL_LOAD_COUNT);
+      const initialPosts = await getFeedPosts(userId, profileFeed, INITIAL_LOAD_COUNT);
       setPosts(initialPosts);
       setHasMore(initialPosts.length === INITIAL_LOAD_COUNT);
     } catch (err) {
@@ -65,7 +65,7 @@ export function useFeedPagination(userId: string): UseFeedPaginationReturn {
 
     try {
       const lastPost = posts[posts.length - 1];
-      const morePosts = await getFeedPosts(userId, LOAD_MORE_COUNT, lastPost);
+      const morePosts = await getFeedPosts(userId, profileFeed, LOAD_MORE_COUNT, lastPost);
 
       if (morePosts.length === 0) {
         setHasMore(false);
@@ -90,7 +90,7 @@ export function useFeedPagination(userId: string): UseFeedPaginationReturn {
     setNewPostsAvailable(0);
 
     try {
-      const initialPosts = await getFeedPosts(userId, INITIAL_LOAD_COUNT);
+      const initialPosts = await getFeedPosts(userId, profileFeed, INITIAL_LOAD_COUNT);
       setPosts(initialPosts);
       setHasMore(initialPosts.length === INITIAL_LOAD_COUNT);
     } catch (err) {
