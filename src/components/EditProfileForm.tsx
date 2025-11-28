@@ -126,14 +126,12 @@ export default function EditProfileForm({ user, onSuccess }: EditProfileFormProp
       // Préparer les données de mise à jour (sans valeurs undefined)
       const updateData: UpdateUserProfileData = {
         username: formData.username,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        bio: formData.bio,
+        photoURL: photoURL,
         isPrivate: formData.isPrivate,
       };
-
-      // Ajouter les champs optionnels seulement s'ils ont une valeur
-      if (formData.firstName) updateData.firstName = formData.firstName;
-      if (formData.lastName) updateData.lastName = formData.lastName;
-      if (formData.bio) updateData.bio = formData.bio;
-      if (photoURL) updateData.photoURL = photoURL;
 
       // Mise à jour du profil
       await updateUserProfile(user.uid, updateData);
