@@ -24,6 +24,7 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
   const [query, setQuery] = useState('');
   const [caching, setCaching] = useState(false);
   const [albumStatuses, setAlbumStatuses] = useState<Map<string, AlbumStatus>>(new Map());
+  const [cachedResults, setCachedResults] = useState<AlbumSearchResult[]>([]);
 
   // Debounce la query pour éviter trop de requêtes
   const debouncedQuery = useDebouncedValue(query, 500);
@@ -80,6 +81,9 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
         const cachedCount = cachedResults.filter((a) => a.firestoreId).length;
         console.log(`[Cache Client] Terminé: ${cachedCount}/${cachedResults.length} albums cachés`);
 
+        // Store the cached results with firestoreId
+        setCachedResults(cachedResults);
+
         // 2. Vérifier le statut (collection/wishlist) si user connecté
         if (user) {
           console.log(`[Status] Vérification du statut pour ${cachedResults.length} albums...`);
@@ -121,12 +125,20 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
     [user]
   );
 
+  // Clear cached results when query changes
+  React.useEffect(() => {
+    setCachedResults([]);
+  }, [debouncedQuery]);
+
   // Déclencher le cache quand les résultats changent
   React.useEffect(() => {
     if (spotifyResults.length > 0) {
       cacheAndCheckStatuses(spotifyResults);
     }
   }, [spotifyResults, cacheAndCheckStatuses]);
+
+  // Use cached results if available, otherwise use Spotify results
+  const displayResults = cachedResults.length > 0 ? cachedResults : spotifyResults;
 
   return (
     <div className="w-full">
@@ -190,7 +202,7 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
       )}
 
       {/* Loading skeletons */}
-      {isLoading && spotifyResults.length === 0 && (
+      {isLoading && displayResults.length === 0 && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="animate-pulse">
@@ -203,15 +215,15 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
       )}
 
       {/* Résultats */}
-      {!isLoading && spotifyResults.length > 0 && (
+      {!isLoading && displayResults.length > 0 && (
         <>
           <p className="mb-4 text-sm text-[var(--foreground-muted)]">
-            {spotifyResults.length} résultat{spotifyResults.length > 1 ? 's' : ''} trouvé
-            {spotifyResults.length > 1 ? 's' : ''}
+            {displayResults.length} résultat{displayResults.length > 1 ? 's' : ''} trouvé
+            {displayResults.length > 1 ? 's' : ''}
             {isFetching && ' (mise à jour...)'}
           </p>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {spotifyResults.map((album) => {
+            {displayResults.map((album) => {
               const status = album.firestoreId ? albumStatuses.get(album.firestoreId) : null;
               const inCollection = status?.inCollection || false;
               const inWishlist = status?.inWishlist || false;
@@ -273,7 +285,7 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
       )}
 
       {/* Empty state */}
-      {!isLoading && hasSearched && spotifyResults.length === 0 && !error && (
+      {!isLoading && hasSearched && displayResults.length === 0 && !error && (
         <div className="py-16 text-center">
           <div className="mb-4 text-6xl">🔍</div>
           <h3 className="mb-2 text-xl font-semibold text-[var(--foreground)]">Aucun résultat</h3>
