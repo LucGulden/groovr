@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import AlbumCard from './AlbumCard';
 import Button from './Button';
 import { getOrCreateAlbum } from '@/lib/albums';
 import { isInCollection, isInWishlist } from '@/lib/user-albums';
 import { useAuth } from './AuthProvider';
+import { useSearchAlbums } from '@/hooks/useSpotifyQueries';
+import { useDebouncedValue } from '@/hooks/useDebounce';
 import type { AlbumSearchResult } from '@/types/album';
 
 interface AlbumSearchProps {
@@ -20,135 +22,111 @@ interface AlbumStatus {
 export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
   const { user } = useAuth();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<AlbumSearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
   const [caching, setCaching] = useState(false);
   const [albumStatuses, setAlbumStatuses] = useState<Map<string, AlbumStatus>>(new Map());
 
-  // Fonction de recherche
-  const performSearch = useCallback(async (searchQuery: string) => {
-    if (!searchQuery || searchQuery.trim().length < 2) {
-      setResults([]);
-      setHasSearched(false);
-      return;
-    }
+  // Debounce la query pour éviter trop de requêtes
+  const debouncedQuery = useDebouncedValue(query, 500);
 
-    try {
-      setLoading(true);
-      setError(null);
-      setHasSearched(true);
+  // React Query hook pour la recherche Spotify
+  // Cache automatique 1h, pas de requêtes dupliquées
+  const {
+    data: spotifyResults = [],
+    isLoading,
+    error,
+    isFetching,
+  } = useSearchAlbums(debouncedQuery);
 
-      // 1. Recherche sur Spotify via l'API
-      const response = await fetch(`/api/spotify/search?q=${encodeURIComponent(searchQuery)}`);
+  const hasSearched = debouncedQuery.trim().length > 0;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la recherche');
-      }
+  // Cache Firestore et vérification des statuts (en arrière-plan)
+  const cacheAndCheckStatuses = useCallback(
+    async (results: AlbumSearchResult[]) => {
+      if (results.length === 0) return;
 
-      const data = await response.json();
-      const spotifyResults: AlbumSearchResult[] = data.results || [];
+      setCaching(true);
+      console.log(`[Cache Client] Début du cache de ${results.length} albums dans Firestore...`);
 
-      // Afficher les résultats immédiatement
-      setResults(spotifyResults);
-      setLoading(false);
+      try {
+        // 1. Cacher les albums dans Firestore
+        const cachedResults = await Promise.all(
+          results.map(async (album) => {
+            try {
+              const firestoreAlbum = await getOrCreateAlbum({
+                spotifyId: album.spotifyId,
+                title: album.title,
+                artist: album.artist,
+                year: album.year,
+                coverUrl: album.coverUrl,
+                spotifyUrl: album.spotifyUrl,
+              });
 
-      // 2. Cacher les albums dans Firestore en arrière-plan (côté client)
-      if (spotifyResults.length > 0) {
-        setCaching(true);
-        console.log(`[Cache Client] Début du cache de ${spotifyResults.length} albums dans Firestore...`);
+              console.log(`[Cache Client] ✓ Album caché: ${album.title} (ID: ${firestoreAlbum.id})`);
 
-        try {
-          const cachedResults = await Promise.all(
-            spotifyResults.map(async (album) => {
+              return {
+                ...album,
+                firestoreId: firestoreAlbum.id,
+              };
+            } catch (err) {
+              console.error(
+                `[Cache Client] ✗ Erreur pour "${album.title}":`,
+                err instanceof Error ? err.message : err
+              );
+              return album;
+            }
+          })
+        );
+
+        const cachedCount = cachedResults.filter((a) => a.firestoreId).length;
+        console.log(`[Cache Client] Terminé: ${cachedCount}/${cachedResults.length} albums cachés`);
+
+        // 2. Vérifier le statut (collection/wishlist) si user connecté
+        if (user) {
+          console.log(`[Status] Vérification du statut pour ${cachedResults.length} albums...`);
+          const statusMap = new Map<string, AlbumStatus>();
+
+          await Promise.all(
+            cachedResults.map(async (album) => {
+              if (!album.firestoreId) return;
+
               try {
-                // Cacher l'album dans Firestore (l'utilisateur est authentifié côté client)
-                const firestoreAlbum = await getOrCreateAlbum({
-                  spotifyId: album.spotifyId,
-                  title: album.title,
-                  artist: album.artist,
-                  year: album.year,
-                  coverUrl: album.coverUrl,
-                  spotifyUrl: album.spotifyUrl,
+                const [inCol, inWish] = await Promise.all([
+                  isInCollection(user.uid, album.firestoreId),
+                  isInWishlist(user.uid, album.firestoreId),
+                ]);
+
+                statusMap.set(album.firestoreId, {
+                  inCollection: inCol,
+                  inWishlist: inWish,
                 });
 
-                console.log(`[Cache Client] ✓ Album caché: ${album.title} (ID: ${firestoreAlbum.id})`);
-
-                // Retourner l'album avec son ID Firestore
-                return {
-                  ...album,
-                  firestoreId: firestoreAlbum.id,
-                };
+                if (inCol || inWish) {
+                  console.log(`[Status] ${album.title}: Collection=${inCol}, Wishlist=${inWish}`);
+                }
               } catch (err) {
-                console.error(`[Cache Client] ✗ Erreur pour "${album.title}":`, err instanceof Error ? err.message : err);
-                // En cas d'erreur, retourner l'album sans ID Firestore
-                return album;
+                console.error(`[Status] Erreur pour ${album.title}:`, err);
               }
             })
           );
 
-          // Mettre à jour les résultats avec les IDs Firestore
-          setResults(cachedResults);
-
-          const cachedCount = cachedResults.filter(a => a.firestoreId).length;
-          console.log(`[Cache Client] Terminé: ${cachedCount}/${cachedResults.length} albums cachés`);
-
-          // 3. Vérifier le statut (collection/wishlist) de chaque album
-          if (user) {
-            console.log(`[Status] Vérification du statut pour ${cachedResults.length} albums...`);
-            const statusMap = new Map<string, AlbumStatus>();
-
-            await Promise.all(
-              cachedResults.map(async (album) => {
-                if (!album.firestoreId) return;
-
-                try {
-                  const [inCol, inWish] = await Promise.all([
-                    isInCollection(user.uid, album.firestoreId),
-                    isInWishlist(user.uid, album.firestoreId),
-                  ]);
-
-                  statusMap.set(album.firestoreId, {
-                    inCollection: inCol,
-                    inWishlist: inWish,
-                  });
-
-                  if (inCol || inWish) {
-                    console.log(`[Status] ${album.title}: Collection=${inCol}, Wishlist=${inWish}`);
-                  }
-                } catch (err) {
-                  console.error(`[Status] Erreur pour ${album.title}:`, err);
-                }
-              })
-            );
-
-            setAlbumStatuses(statusMap);
-            console.log(`[Status] Vérification terminée`);
-          }
-        } catch (err) {
-          console.error('[Cache Client] Erreur générale:', err);
-        } finally {
-          setCaching(false);
+          setAlbumStatuses(statusMap);
+          console.log(`[Status] Vérification terminée`);
         }
+      } catch (err) {
+        console.error('[Cache Client] Erreur générale:', err);
+      } finally {
+        setCaching(false);
       }
-    } catch (err) {
-      console.error('Erreur de recherche:', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
-      setResults([]);
-      setLoading(false);
+    },
+    [user]
+  );
+
+  // Déclencher le cache quand les résultats changent
+  React.useEffect(() => {
+    if (spotifyResults.length > 0) {
+      cacheAndCheckStatuses(spotifyResults);
     }
-  }, [user]);
-
-  // Debounce de la recherche (500ms)
-  useEffect(() => {
-    const debounce = setTimeout(() => {
-      performSearch(query);
-    }, 500);
-
-    return () => clearTimeout(debounce);
-  }, [query, performSearch]);
+  }, [spotifyResults, cacheAndCheckStatuses]);
 
   return (
     <div className="w-full">
@@ -177,7 +155,7 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
             placeholder="Rechercher un album ou un artiste..."
             className="w-full rounded-lg border border-[var(--background-lighter)] bg-[var(--background-light)] py-4 pl-12 pr-4 text-lg text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
           />
-          {loading && (
+          {isFetching && (
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent"></div>
             </div>
@@ -185,6 +163,7 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
         </div>
         <p className="mt-2 text-sm text-[var(--foreground-muted)]">
           {`Recherchez parmi des millions d'albums sur Spotify`}
+          {debouncedQuery !== query && ' (tape en cours...)'}
         </p>
         {caching && (
           <div className="mt-2 flex items-center gap-2 text-xs text-[var(--primary)]">
@@ -205,13 +184,13 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
                 clipRule="evenodd"
               />
             </svg>
-            <span>{error}</span>
+            <span>{error instanceof Error ? error.message : 'Une erreur est survenue'}</span>
           </div>
         </div>
       )}
 
       {/* Loading skeletons */}
-      {loading && results.length === 0 && (
+      {isLoading && spotifyResults.length === 0 && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="animate-pulse">
@@ -224,13 +203,15 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
       )}
 
       {/* Résultats */}
-      {!loading && results.length > 0 && (
+      {!isLoading && spotifyResults.length > 0 && (
         <>
           <p className="mb-4 text-sm text-[var(--foreground-muted)]">
-            {results.length} résultat{results.length > 1 ? 's' : ''} trouvé{results.length > 1 ? 's' : ''}
+            {spotifyResults.length} résultat{spotifyResults.length > 1 ? 's' : ''} trouvé
+            {spotifyResults.length > 1 ? 's' : ''}
+            {isFetching && ' (mise à jour...)'}
           </p>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {results.map((album) => {
+            {spotifyResults.map((album) => {
               const status = album.firestoreId ? albumStatuses.get(album.firestoreId) : null;
               const inCollection = status?.inCollection || false;
               const inWishlist = status?.inWishlist || false;
@@ -292,12 +273,10 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
       )}
 
       {/* Empty state */}
-      {!loading && hasSearched && results.length === 0 && !error && (
+      {!isLoading && hasSearched && spotifyResults.length === 0 && !error && (
         <div className="py-16 text-center">
           <div className="mb-4 text-6xl">🔍</div>
-          <h3 className="mb-2 text-xl font-semibold text-[var(--foreground)]">
-            Aucun résultat
-          </h3>
+          <h3 className="mb-2 text-xl font-semibold text-[var(--foreground)]">Aucun résultat</h3>
           <p className="text-[var(--foreground-muted)]">
             {`Essayez avec un autre nom d'album ou d'artiste`}
           </p>
@@ -305,7 +284,7 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
       )}
 
       {/* État initial */}
-      {!loading && !hasSearched && (
+      {!isLoading && !hasSearched && (
         <div className="py-16 text-center">
           <div className="mb-4 text-6xl">💿</div>
           <h3 className="mb-2 text-xl font-semibold text-[var(--foreground)]">

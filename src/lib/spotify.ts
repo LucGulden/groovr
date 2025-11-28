@@ -44,7 +44,7 @@ export async function getSpotifyAccessToken(): Promise<string> {
     cachedToken = data.access_token;
     tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // -1 minute de sécurité
 
-    return cachedToken;
+    return data.access_token;
   } catch (error) {
     console.error('Erreur lors de l\'obtention du token Spotify:', error);
     throw new Error('Impossible d\'obtenir le token Spotify');

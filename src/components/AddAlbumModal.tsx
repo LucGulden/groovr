@@ -3,11 +3,11 @@
 import React, { useState } from 'react';
 import AlbumSearch from './AlbumSearch';
 import Button from './Button';
+import ImageOptimized from './ImageOptimized';
 import { addToCollection, addToWishlist } from '@/lib/user-albums';
 import { useAuth } from './AuthProvider';
 import type { AlbumSearchResult } from '@/types/album';
 import type { CollectionType } from '@/types/collection';
-import Image from 'next/image';
 
 interface AddAlbumModalProps {
   isOpen: boolean;
@@ -146,9 +146,11 @@ export default function AddAlbumModal({
           {selectedAlbum && (
             <div className="mb-6 rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/5 p-4">
               <div className="flex items-center gap-4">
-                <Image
+                <ImageOptimized
                   src={selectedAlbum.coverUrl}
                   alt={selectedAlbum.title}
+                  width={80}
+                  height={80}
                   className="h-20 w-20 rounded-lg object-cover"
                 />
                 <div className="flex-1">

@@ -1,120 +1,51 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect } from 'react';
 import PostCard from './PostCard';
-import { getFeedPosts } from '@/lib/posts';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { PostWithDetails } from '@/types/post';
+import { useFeedPagination } from '@/hooks/useFeedPagination';
 
 interface FeedProps {
   userId: string;
 }
 
 export default function Feed({ userId }: FeedProps) {
-  const [posts, setPosts] = useState<PostWithDetails[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [newPostsAvailable, setNewPostsAvailable] = useState(0);
+  const {
+    posts,
+    loading,
+    loadingMore,
+    hasMore,
+    error,
+    refreshing,
+    newPostsAvailable,
+    loadMore,
+    refresh,
+    handleDeletePost,
+  } = useFeedPagination(userId);
 
-  // Pull-to-refresh state
-  const [pullStartY, setPullStartY] = useState(0);
-  const [pullCurrentY, setPullCurrentY] = useState(0);
-  const [isPulling, setIsPulling] = useState(false);
+  // Intersection Observer pour infinite scroll
+  const observerTarget = useRef<HTMLDivElement>(null);
 
-  const loadInitialPosts = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const initialPosts = await getFeedPosts(userId, 20);
-      setPosts(initialPosts);
-      setHasMore(initialPosts.length === 20);
-    } catch (err) {
-      console.error('Erreur lors du chargement du feed:', err);
-      setError('Impossible de charger le feed');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
-
-  // Charger les posts initiaux
   useEffect(() => {
-    loadInitialPosts();
-  }, [loadInitialPosts]);
-
-  // Écouter les nouveaux posts en temps réel
-  useEffect(() => {
-    if (posts.length === 0) return;
-
-    // Récupérer le timestamp du post le plus récent
-    const newestPostTime = posts[0].createdAt;
-
-    const postsRef = collection(db, 'posts');
-    const q = query(
-      postsRef,
-      where('createdAt', '>', newestPostTime),
-      orderBy('createdAt', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const newPostsCount = snapshot.docs.length;
-        if (newPostsCount > 0) {
-          setNewPostsAvailable(newPostsCount);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMore();
         }
       },
-      (error) => {
-        console.error('Erreur lors de l\'écoute des nouveaux posts:', error);
-      }
+      { threshold: 1.0 }
     );
 
-    return () => unsubscribe();
-  }, [posts]);
-
-  const loadMorePosts = async () => {
-    if (loadingMore || !hasMore || posts.length === 0) return;
-
-    setLoadingMore(true);
-
-    try {
-      const lastPost = posts[posts.length - 1];
-      const morePosts = await getFeedPosts(userId, 20, lastPost);
-
-      if (morePosts.length === 0) {
-        setHasMore(false);
-      } else {
-        setPosts((prev) => [...prev, ...morePosts]);
-        setHasMore(morePosts.length === 20);
-      }
-    } catch (err) {
-      console.error('Erreur lors du chargement de plus de posts:', err);
-    } finally {
-      setLoadingMore(false);
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
     }
-  };
 
-  // Refresh feed (pull-to-refresh)
-  const refreshFeed = async () => {
-    setRefreshing(true);
-    setError(null);
-    setNewPostsAvailable(0); // Reset notification
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loadMore]);
 
-    try {
-      const initialPosts = await getFeedPosts(userId, 20);
-      setPosts(initialPosts);
-      setHasMore(initialPosts.length === 20);
-    } catch (err) {
-      console.error('Erreur lors du rafraîchissement du feed:', err);
-      setError('Impossible de rafraîchir le feed');
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  // Pull-to-refresh state
+  const [pullStartY, setPullStartY] = React.useState(0);
+  const [pullCurrentY, setPullCurrentY] = React.useState(0);
+  const [isPulling, setIsPulling] = React.useState(false);
 
   // Handle touch events for pull-to-refresh
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -140,7 +71,7 @@ export default function Feed({ userId }: FeedProps) {
 
   const handleTouchEnd = () => {
     if (isPulling && pullCurrentY > 80) {
-      refreshFeed();
+      refresh();
     }
 
     setIsPulling(false);
@@ -189,9 +120,9 @@ export default function Feed({ userId }: FeedProps) {
             d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <p className="text-red-500 font-semibold mb-4">{error}</p>
+        <p className="text-red-500 font-semibold mb-4">{error.message}</p>
         <button
-          onClick={loadInitialPosts}
+          onClick={refresh}
           className="px-6 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors"
         >
           Réessayer
@@ -245,7 +176,7 @@ export default function Feed({ userId }: FeedProps) {
       {/* New posts notification */}
       {newPostsAvailable > 0 && !refreshing && (
         <button
-          onClick={refreshFeed}
+          onClick={refresh}
           className="sticky top-20 z-10 mx-auto flex items-center gap-2 rounded-full bg-[var(--primary)] px-6 py-3 font-semibold text-white shadow-lg transition-all hover:bg-[var(--primary-hover)] hover:scale-105"
         >
           <svg
@@ -284,54 +215,44 @@ export default function Feed({ userId }: FeedProps) {
       )}
 
       {/* Posts List */}
-      {posts.map((post) => (
+      {posts.map((post, index) => (
         <PostCard
           key={post.id}
           post={post}
           currentUserId={userId}
-          onDelete={() => {
-            // Retirer le post de la liste
-            setPosts((prev) => prev.filter((p) => p.id !== post.id));
-          }}
+          priority={index === 0} // Priority loading for first post only
+          onDelete={() => handleDeletePost(post.id)}
         />
       ))}
 
-      {/* Load More Button */}
+      {/* Intersection Observer target pour infinite scroll */}
       {hasMore && (
-        <div className="flex justify-center pt-6">
-          <button
-            onClick={loadMorePosts}
-            disabled={loadingMore}
-            className="px-8 py-3 bg-[var(--background-light)] border border-[var(--background-lighter)] text-[var(--foreground)] rounded-lg hover:bg-[var(--background-lighter)] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loadingMore ? (
-              <span className="flex items-center gap-2">
-                <svg
-                  className="animate-spin h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Chargement...
-              </span>
-            ) : (
-              'Charger plus'
-            )}
-          </button>
+        <div ref={observerTarget} className="h-10 flex justify-center items-center">
+          {loadingMore && (
+            <div className="flex items-center gap-2 text-[var(--foreground-muted)]">
+              <svg
+                className="animate-spin h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              <span>Chargement...</span>
+            </div>
+          )}
         </div>
       )}
 

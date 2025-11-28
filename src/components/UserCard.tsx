@@ -42,7 +42,7 @@ export default function UserCard({
         {/* Infos utilisateur */}
         <div className="flex-1 overflow-hidden">
           <p className="truncate font-semibold text-[var(--foreground)]">
-            {user.fullName || user.username}
+            {[user.firstName, user.lastName].filter(Boolean).join(' ') || user.username}
           </p>
           <p className="truncate text-sm text-[var(--foreground-muted)]">
             @{user.username}

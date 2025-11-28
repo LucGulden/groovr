@@ -55,6 +55,20 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=votre_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=votre_app_id
 ```
 
+4. Déployez les indexes Firestore requis :
+```bash
+# Installer Firebase CLI globalement (si pas déjà fait)
+npm install -g firebase-tools
+
+# Se connecter à Firebase
+firebase login
+
+# Déployer les indexes
+firebase deploy --only firestore:indexes
+```
+
+> **Note** : Les indexes Firestore sont nécessaires pour que toutes les queries de l'application fonctionnent. Le fichier `firestore.indexes.json` contient déjà la configuration complète. La création des indexes prend environ 5-15 minutes. Pour plus de détails, consultez [docs/FIRESTORE_INDEXES.md](docs/FIRESTORE_INDEXES.md).
+
 ## 🔑 Obtenir les credentials
 
 ### Firebase
@@ -132,6 +146,15 @@ npm run test:watch    # Lance les tests en mode watch
 npm run test:e2e      # Lance les tests E2E (Playwright)
 npm run test:e2e:ui   # Lance les tests E2E en mode UI
 ```
+
+### Firebase
+```bash
+firebase login                            # Se connecter à Firebase
+firebase deploy --only firestore:indexes  # Déployer les indexes Firestore
+firebase use dev                          # Changer de projet Firebase (dev/prod)
+```
+
+> **Important** : Les indexes Firestore doivent être déployés avant d'utiliser l'application. Voir [docs/FIRESTORE_INDEXES.md](docs/FIRESTORE_INDEXES.md) pour plus de détails.
 
 ## 🎨 Design
 

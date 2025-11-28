@@ -4,21 +4,22 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Avatar from './Avatar';
 import CommentItem from './CommentItem';
+import ImageOptimized from './ImageOptimized';
 import { getRelativeTimeString } from '@/lib/date-utils';
 import { likePost, unlikePost, hasLikedPost } from '@/lib/likes';
 import { addComment, subscribeToPostComments } from '@/lib/comments';
 import { deletePost } from '@/lib/posts';
 import type { PostWithDetails } from '@/types/post';
 import type { CommentWithUser } from '@/types/comment';
-import Image from 'next/image';
 
 interface PostCardProps {
   post: PostWithDetails;
   currentUserId?: string;
   onDelete?: () => void;
+  priority?: boolean; // Priority loading for first post (above-the-fold)
 }
 
-export default function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
+export default function PostCard({ post, currentUserId, onDelete, priority = false }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likesCount);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount);
@@ -28,7 +29,6 @@ export default function PostCard({ post, currentUserId, onDelete }: PostCardProp
   const [commentText, setCommentText] = useState('');
   const [isCommenting, setIsCommenting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   const isOwner = currentUserId === post.userId;
 
@@ -222,23 +222,14 @@ export default function PostCard({ post, currentUserId, onDelete }: PostCardProp
       </div>
 
       {/* Album Cover */}
-      <div className="mb-4 relative">
-        {/* Shimmer placeholder */}
-        {!imageLoaded && (
-          <div className="w-full max-w-md mx-auto aspect-square rounded-xl overflow-hidden">
-            <div className="h-full w-full animate-pulse bg-gradient-to-r from-[var(--background-lighter)] via-[var(--background)] to-[var(--background-lighter)] bg-[length:200%_100%]">
-              <div className="h-full w-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-            </div>
-          </div>
-        )}
-
-        <Image
+      <div className="mb-4 relative w-full max-w-md mx-auto aspect-square">
+        <ImageOptimized
           src={post.album.coverUrl}
           alt={`${post.album.title} - ${post.album.artist}`}
-          className={`w-full max-w-md mx-auto rounded-xl shadow-md transition-opacity duration-300 ${
-            imageLoaded ? 'opacity-100' : 'opacity-0 absolute'
-          }`}
-          onLoad={() => setImageLoaded(true)}
+          fill
+          sizes="(max-width: 768px) 100vw, 448px"
+          priority={priority}
+          className="rounded-xl shadow-md object-cover"
         />
       </div>
 

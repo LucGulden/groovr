@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import type { AlbumSearchResult } from '@/types/album';
-import Image from 'next/image';
+import React from 'react';
+import type { Album, AlbumSearchResult } from '@/types/album';
+import ImageOptimized from './ImageOptimized';
 
 interface AlbumCardProps {
-  album: AlbumSearchResult;
+  album: AlbumSearchResult | Album;
   actions?: React.ReactNode;
   onClick?: () => void;
+  priority?: boolean; // Priority loading for first 3 albums (above-the-fold)
 }
 
-export default function AlbumCard({ album, actions, onClick }: AlbumCardProps) {
-  const [imageLoaded, setImageLoaded] = useState(false);
+export default function AlbumCard({ album, actions, onClick, priority = false }: AlbumCardProps) {
   return (
     <div
       className="group relative overflow-hidden rounded-lg border border-[var(--background-lighter)] bg-[var(--background-light)] transition-all hover:border-[var(--primary)] hover:shadow-lg hover:shadow-[var(--primary)]/20"
@@ -17,21 +17,13 @@ export default function AlbumCard({ album, actions, onClick }: AlbumCardProps) {
     >
       {/* Pochette */}
       <div className="relative aspect-square w-full overflow-hidden bg-[var(--background)]">
-        {/* Shimmer placeholder */}
-        {!imageLoaded && (
-          <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-[var(--background-lighter)] via-[var(--background)] to-[var(--background-lighter)] bg-[length:200%_100%]">
-            <div className="h-full w-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-          </div>
-        )}
-
-        <Image
+        <ImageOptimized
           src={album.coverUrl}
           alt={`${album.title} par ${album.artist}`}
-          className={`h-full w-full object-cover transition-all duration-300 group-hover:scale-110 ${
-            imageLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-          loading="lazy"
-          onLoad={() => setImageLoaded(true)}
+          fill
+          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+          priority={priority}
+          className="h-full w-full object-cover transition-all duration-300 group-hover:scale-110"
         />
 
         {/* Overlay au hover */}

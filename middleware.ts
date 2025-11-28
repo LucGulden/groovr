@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { verifyIdToken } from '@/lib/firebase-admin';
 
 /**
  * Middleware pour la protection des routes
@@ -7,28 +8,38 @@ import type { NextRequest } from 'next/server';
  * Routes publiques : /, /login, /signup
  * Routes protégées : /feed, /collection, /wishlist, /profil/*
  *
- * Note : La vérification réelle de l'authentification se fait côté client
- * car Firebase Auth est principalement client-side. Ce middleware gère
- * principalement les redirections basées sur les patterns de routes.
+ * Ce middleware vérifie l'authentification côté serveur en validant
+ * le token Firebase stocké dans un cookie HTTP-only sécurisé.
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const protectedRoutes = ['/feed', '/collection', '/wishlist', '/profil'];
 
-  // Vérifie un cookie "token" simulant la session
+  // Récupère le token depuis le cookie
   const token = request.cookies.get('token')?.value;
 
-  // Redirection vers login si route protégée et pas de token
+  // Vérifie si la route est protégée
   const isProtected = protectedRoutes.some(route => pathname.startsWith(route));
-  if (isProtected && !token) {
+
+  // Vérifie si c'est une route d'authentification
+  const isAuthRoute = ['/', '/login', '/signup'].includes(pathname);
+
+  // Si on a un token, on le vérifie
+  let isValidToken = false;
+  if (token) {
+    const decodedToken = await verifyIdToken(token);
+    isValidToken = decodedToken !== null;
+  }
+
+  // Redirection vers login si route protégée et pas de token valide
+  if (isProtected && !isValidToken) {
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
 
   // Redirection vers /feed si utilisateur déjà connecté visite /, /login ou /signup
-  const isAuthRoute = ['/', '/login', '/signup'].includes(pathname);
-  if (isAuthRoute && token) {
+  if (isAuthRoute && isValidToken) {
     const feedUrl = new URL('/feed', request.url);
     return NextResponse.redirect(feedUrl);
   }

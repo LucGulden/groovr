@@ -10,6 +10,9 @@ import {
   serverTimestamp,
   onSnapshot,
   Unsubscribe,
+  limit,
+  startAfter,
+  DocumentSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { getAlbumById } from './albums';
@@ -401,6 +404,98 @@ export function subscribeToUserWishlist(
       }
     }
   );
+}
+
+/**
+ * Récupère une page d'albums avec pagination
+ * Pour Collection ou Wishlist
+ */
+export async function getUserAlbumsPaginated(
+  userId: string,
+  type: CollectionType,
+  limitCount: number = 20,
+  lastDoc?: DocumentSnapshot
+): Promise<{ albums: UserAlbumWithDetails[], lastDoc: DocumentSnapshot | null }> {
+  try {
+    const userAlbumsRef = collection(db, USER_ALBUMS_COLLECTION);
+
+    let q = query(
+      userAlbumsRef,
+      where('userId', '==', userId),
+      where('type', '==', type),
+      orderBy('addedAt', 'desc'),
+      limit(limitCount)
+    );
+
+    // Pagination: démarrer après le dernier document
+    if (lastDoc) {
+      q = query(
+        userAlbumsRef,
+        where('userId', '==', userId),
+        where('type', '==', type),
+        orderBy('addedAt', 'desc'),
+        startAfter(lastDoc),
+        limit(limitCount)
+      );
+    }
+
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return { albums: [], lastDoc: null };
+    }
+
+    const userAlbums: UserAlbum[] = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as UserAlbum[];
+
+    // Récupérer les détails de chaque album
+    const albumsWithDetails = await Promise.all(
+      userAlbums.map(async (userAlbum) => {
+        const album = await getAlbumById(userAlbum.albumId);
+        if (!album) {
+          console.warn(`Album ${userAlbum.albumId} non trouvé`);
+          return null;
+        }
+        return {
+          ...userAlbum,
+          album,
+        } as UserAlbumWithDetails;
+      })
+    );
+
+    const filtered = albumsWithDetails.filter((item): item is UserAlbumWithDetails => item !== null);
+    const newLastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+
+    return { albums: filtered, lastDoc: newLastDoc };
+  } catch (error) {
+    console.error('Erreur lors de la récupération paginée:', error);
+    throw new Error('Impossible de récupérer les albums');
+  }
+}
+
+/**
+ * Compte le nombre total d'albums (collection ou wishlist)
+ */
+export async function countUserAlbums(
+  userId: string,
+  type: CollectionType
+): Promise<number> {
+  try {
+    const userAlbumsRef = collection(db, USER_ALBUMS_COLLECTION);
+    const q = query(
+      userAlbumsRef,
+      where('userId', '==', userId),
+      where('type', '==', type)
+    );
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.size;
+  } catch (error) {
+    console.error('Erreur lors du comptage des albums:', error);
+    return 0;
+  }
 }
 
 /**
