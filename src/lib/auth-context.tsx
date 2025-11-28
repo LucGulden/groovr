@@ -67,6 +67,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (userProfile) {
             setUser(userProfile);
             setFirebaseUser(firebaseUser);
+
+            // Créer la session côté serveur
+            try {
+              const idToken = await firebaseUser.getIdToken();
+              await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken }),
+              });
+            } catch (sessionError) {
+              console.error('Erreur lors de la création de la session:', sessionError);
+            }
           } else {
             // Si le profil n'existe pas, déconnecter l'utilisateur
             await firebaseSignOut(auth);
@@ -76,6 +88,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setUser(null);
           setFirebaseUser(null);
+
+          // Supprimer la session côté serveur
+          try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+          } catch (logoutError) {
+            console.error('Erreur lors de la suppression de la session:', logoutError);
+          }
         }
       } catch (err) {
         console.error('Erreur lors de la récupération du profil:', err);
