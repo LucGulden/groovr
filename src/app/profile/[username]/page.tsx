@@ -9,6 +9,7 @@ import { subscribeToUserCollection, subscribeToUserWishlist } from '@/lib/user-a
 import { getFollowStats } from '@/lib/follows';
 import type { User, ProfileStats } from '@/types/user';
 import type { UserAlbumWithDetails } from '@/types/collection';
+import ImageOptimized from '@/components/ImageOptimized';
 
 export default function ProfilePage() {
   const params = useParams();
@@ -242,11 +243,12 @@ export default function ProfilePage() {
                   <div key={userAlbum.id} className="group relative overflow-hidden rounded-lg border border-[var(--background-lighter)] bg-[var(--background-light)] transition-all hover:border-[var(--primary)] hover:shadow-lg hover:shadow-[var(--primary)]/20">
                     {/* Pochette */}
                     <div className="relative aspect-square w-full overflow-hidden bg-[var(--background)]">
-                      <img
+                      <ImageOptimized
                         src={userAlbum.album.coverUrl}
                         alt={`${userAlbum.album.title} par ${userAlbum.album.artist}`}
+                        fill
+                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                        loading="lazy"
                       />
                     </div>
 
@@ -298,11 +300,12 @@ export default function ProfilePage() {
                   <div key={userAlbum.id} className="group relative overflow-hidden rounded-lg border border-[var(--background-lighter)] bg-[var(--background-light)] transition-all hover:border-[var(--primary)] hover:shadow-lg hover:shadow-[var(--primary)]/20">
                     {/* Pochette */}
                     <div className="relative aspect-square w-full overflow-hidden bg-[var(--background)]">
-                      <img
+                      <ImageOptimized
                         src={userAlbum.album.coverUrl}
                         alt={`${userAlbum.album.title} par ${userAlbum.album.artist}`}
+                        fill
+                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                        loading="lazy"
                       />
                     </div>
 
