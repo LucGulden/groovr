@@ -2,51 +2,101 @@
 
 import { useState } from 'react';
 import AlbumSearch from './AlbumSearch';
-import Button from './Button';
-import { useAuth } from './AuthProvider';
-import type { AlbumSearchResult } from '@/types/album';
+import ReleaseSearch from './ReleaseSearch';
 import type { CollectionType } from '@/types/collection';
-import dynamic from 'next/dynamic';
+import { AnimatePresence, motion } from 'framer-motion';
+import type { Album } from '@/types/album';
+import { Release } from '@/types/release';
+import ReleaseDetails from './ReleaseDetails';
+import { addToCollection, addToWishlist } from '@/lib/user-releases';
+import { useAuth } from './AuthProvider';
 
 interface AddAlbumModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
   targetType: CollectionType;
 }
+
+type ModalStep = 'albumSearch' | 'releaseSearch' | 'releaseDetails';
 
 export default function AddAlbumModal({
   isOpen,
   onClose,
+  onSuccess,
   targetType,
 }: AddAlbumModalProps) {
   const { user } = useAuth();
-  const [selectedAlbum, setSelectedAlbum] = useState<AlbumSearchResult | null>(null);
+  const [currentStep, setCurrentStep] = useState<ModalStep>('albumSearch');
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [selectedRelease, setSelectedRelease] = useState<Release | null>(null);
+  const [success, setSuccess] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [isReleaseModalOpen, setIsReleaseModalOpen] = useState(false);
-  const [isSpotifyAlbumModalOpen, setIsSpotifyAlbumModalOpen] = useState(false);
-
-  // Dynamic import for AddReleaseModal (only loaded when modal is opened)
-  const AddReleaseModal = dynamic(() => import('@/components/AddReleaseModal'), {
-    ssr: false,
-  });
-
-  // Dynamic import for AddReleaseModal (only loaded when modal is opened)
-  const AddSpotifyAlbumModal = dynamic(() => import('@/components/AddSpotifyAlbumModal'), {
-    ssr: false,
-  });
 
   if (!isOpen) return null;
 
-  const handleSelectAlbum = (album: AlbumSearchResult) => {
+  const handleSelectAlbum = (album: Album) => {
     setSelectedAlbum(album);
-    setIsReleaseModalOpen(true)
+    setCurrentStep('releaseSearch');
+  };
+
+  const handleSelectRelease = (release: Release) => {
+    setSelectedRelease(release);
+    setCurrentStep('releaseDetails');
+  };
+
+  const handleBack = () => {
+    if (currentStep === 'releaseSearch') {
+      setCurrentStep('albumSearch');
+      setSelectedAlbum(null);
+    } else if (currentStep === 'releaseDetails') {
+      setCurrentStep('releaseSearch');
+      setSelectedRelease(null);
+    }
+  };
+  
+  const handleAddRelease = async () => {
+    if (!user || !selectedRelease) return;
+
+    // Vérifier qu'on a un firestoreId
+    if (!selectedRelease.id) {
+      setError('Vinyle non disponible. Veuillez réessayer.');
+      return;
+    }
+
+    try {
+      setError(null);
+      if (targetType === 'collection') {
+        await addToCollection(user.uid, selectedRelease.id);
+      } else {
+        await addToWishlist(user.uid, selectedRelease.id);
+      }
+
+      setSuccess(true);
+      setSelectedRelease(null);
+
+      // Fermer le modal après un court délai
+      setTimeout(() => {
+        handleSuccess();
+      }, 1500);
+    } catch (err) {
+      console.error('Erreur lors de l\'ajout:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+    }
+  };
+
+  const handleSuccess = () => {
+    // 🔧 Reset tous les états
+    setCurrentStep('albumSearch');
+    setSelectedAlbum(null);
     setError(null);
     setSuccess(false);
+    onSuccess();
   };
 
   const handleClose = () => {
-    setIsReleaseModalOpen(false);
+    // 🔧 Reset tous les états
+    setCurrentStep('albumSearch');
     setSelectedAlbum(null);
     setError(null);
     setSuccess(false);
@@ -59,21 +109,47 @@ export default function AddAlbumModal({
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={handleClose}
-      ></div>
+      />
 
       {/* Modal */}
       <div className="relative z-10 max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-2xl border border-[var(--background-lighter)] bg-[var(--background)] shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 z-10 border-b border-[var(--background-lighter)] bg-[var(--background)] px-6 py-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-[var(--foreground)]">
-              {targetType === 'collection'
-                ? 'Ajouter à ma collection'
-                : 'Ajouter à ma wishlist'}
-            </h2>
+            <div className="flex items-center gap-3">
+              {/* 🆕 Bouton retour */}
+              {currentStep !== 'albumSearch' && (
+                <button
+                  onClick={handleBack}
+                  className="rounded-full p-2 text-[var(--foreground-muted)] hover:bg-[var(--background-lighter)] hover:text-[var(--foreground)] transition-colors"
+                  aria-label="Retour"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+              )}
+              
+              <h2 className="text-2xl font-bold text-[var(--foreground)]">
+                {/* 🆕 Titre dynamique selon l'étape */}
+                {currentStep === 'albumSearch' && (
+                  targetType === 'collection'
+                    ? 'Ajouter à ma collection'
+                    : 'Ajouter à ma wishlist'
+                )}
+                {currentStep === 'releaseSearch' && 'Choisir une version'}
+              </h2>
+            </div>
+
             <button
               onClick={handleClose}
-              className="rounded-full p-2 text-[var(--foreground-muted)] hover:bg-[var(--background-lighter)] hover:text-[var(--foreground)]"
+              className="rounded-full p-2 text-[var(--foreground-muted)] hover:bg-[var(--background-lighter)] hover:text-[var(--foreground)] transition-colors"
+              aria-label="Fermer"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -119,31 +195,50 @@ export default function AddAlbumModal({
             </div>
           )}
 
-          {/* Composant de recherche */}
-          <AlbumSearch onAlbumSelect={handleSelectAlbum} />
-
-          <Button
-            onClick={() => setIsSpotifyAlbumModalOpen(true)}
-          >
-            {'Importer un album depuis Spotify'}
-          </Button>
+          {/* 🔧 Contenu conditionnel (BUG CORRIGÉ) */}
+          <AnimatePresence mode="wait">
+            {currentStep === 'albumSearch' && (
+              <motion.div
+                key="albumSearch"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <AlbumSearch onAlbumSelect={handleSelectAlbum} />
+              </motion.div>
+            )}
+            
+            {currentStep === 'releaseSearch' && selectedAlbum && (
+              <motion.div
+                key="releaseSearch"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ReleaseSearch
+                  albumId={selectedAlbum.id}
+                  onReleaseSelect={handleSelectRelease}
+                />
+              </motion.div>
+            )}
+            {currentStep === 'releaseDetails' && selectedRelease && (
+              <motion.div
+                key="releaseDetails"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ReleaseDetails
+                  release={selectedRelease}
+                  onConfirm={handleAddRelease}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-        <AddSpotifyAlbumModal
-          isOpen={isSpotifyAlbumModalOpen}
-          onClose={() => {
-            handleClose();
-          }}
-          targetType={targetType}
-        />
-        {/* Modal de selection de release */}
-        <AddReleaseModal
-          isOpen={isReleaseModalOpen}
-          albumId={selectedAlbum?.firestoreId}
-          targetType={targetType}
-          onClose={() => {
-            handleClose();
-          }}
-        />
       </div>
     </div>
   );

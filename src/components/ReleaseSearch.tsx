@@ -41,6 +41,7 @@ export default function ReleaseSearch({ albumId, onReleaseSelect }: ReleaseSearc
   // Recherche dans Firestore et vérification des statuts
   const performSearch = useCallback(
     async (searchQuery: string) => {
+      console.log('perfoming search for vinyl with query:' + searchQuery);
       setIsLoading(true);
       setError(null);
 
@@ -93,6 +94,7 @@ export default function ReleaseSearch({ albumId, onReleaseSelect }: ReleaseSearc
 
   // Déclencher la recherche quand la query debounced change
   useEffect(() => {
+    console.log('ALLO')
     performSearch(debouncedQuery);
   }, [debouncedQuery, performSearch]);
     

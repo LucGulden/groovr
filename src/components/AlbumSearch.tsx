@@ -5,17 +5,17 @@ import AlbumCard from './AlbumCard';
 import Button from './Button';
 import { searchAlbums } from '@/lib/albums';
 import { useDebouncedValue } from '@/hooks/useDebounce';
-import type { AlbumSearchResult } from '@/types/album';
+import type { Album } from '@/types/album';
 
 interface AlbumSearchProps {
-  onAlbumSelect: (album: AlbumSearchResult) => void;
+  onAlbumSelect: (album: Album) => void;
 }
 
 export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [searchResults, setSearchResults] = useState<AlbumSearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<Album[]>([]);
 
   // Debounce la query pour éviter trop de requêtes
   const debouncedQuery = useDebouncedValue(query, 500);

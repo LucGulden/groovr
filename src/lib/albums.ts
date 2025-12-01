@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { albumCache } from './cache';
-import type { Album, AlbumSearchResult, SpotifyAlbumData } from '@/types/album';
+import type { Album, SpotifyAlbumData } from '@/types/album';
 
 const ALBUMS_COLLECTION = 'albums';
 
@@ -94,7 +94,7 @@ export async function getAlbumById(albumId: string): Promise<Album | null> {
  * @param maxResults - Nombre maximum de résultats (par défaut 50)
  * @returns Tableau de résultats de recherche
  */
-export async function searchAlbums(searchQuery: string, maxResults: number = 50): Promise<AlbumSearchResult[]> {
+export async function searchAlbums(searchQuery: string, maxResults: number = 50): Promise<Album[]> {
   try {
     if (!searchQuery || searchQuery.trim().length === 0) {
       return [];
@@ -124,16 +124,7 @@ export async function searchAlbums(searchQuery: string, maxResults: number = 50)
       return titleMatch || artistMatch;
     });
 
-    // Convertir en format AlbumSearchResult
-    const results: AlbumSearchResult[] = filteredAlbums.slice(0, maxResults).map((album) => ({
-      spotifyId: album.spotifyId,
-      title: album.title,
-      artist: album.artist,
-      year: album.year,
-      coverUrl: album.coverUrl,
-      spotifyUrl: album.spotifyUrl,
-      firestoreId: album.id,
-    }));
+    const results: Album[] = filteredAlbums.slice(0, maxResults);
 
     console.log(`[Search] Trouvé ${results.length} albums pour "${searchQuery}"`);
 

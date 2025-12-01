@@ -8,6 +8,9 @@ export interface Release {
   title: string; // Titre alternatif de l'édition
   coverUrl: string; // URL de la cover alternative
   
+  artist: string; // Artiste principal (copié depuis l'album pour faciliter l'affichage)
+  year: number; // Année de l'album (copié depuis l'album pour faciliter l'affichage)
+  
   // Détails de l'édition
   label: string; // Label de pressage
   catalogNumber: string; // Numéro de catalogue

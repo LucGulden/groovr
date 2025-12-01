@@ -109,6 +109,9 @@ export async function searchReleases(albumId: string | undefined, searchQuery: s
       ...doc.data(),
     })) as Release[];
 
+    console.log('---------')
+    console.log(allReleases)
+    console.log(albumId)
     // Filtrer côté client par titre ou artiste
     const filteredReleases = allReleases.filter((release) => {
       const albumMatch = albumId === undefined || release.albumId === albumId

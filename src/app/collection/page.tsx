@@ -85,6 +85,16 @@ export default function CollectionPage() {
     }
   };
 
+  
+  const handleModalSuccess = () => {
+    setIsModalOpen(false);
+    refresh();
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+  };
+
   // Loading state
   if (authLoading || !user) {
     return (
@@ -255,11 +265,8 @@ export default function CollectionPage() {
 
         <AddAlbumModal
           isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            // Rafraîchir la liste après ajout
-            refresh();
-          }}
+          onClose={handleModalClose}
+          onSuccess={handleModalSuccess}
           targetType="collection"
         />
       </div>
