@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import AlbumCard from './AlbumCard';
 import Button from './Button';
-import type { UserAlbumWithDetails, CollectionType } from '@/types/collection';
+import type { UserReleaseWithDetails, CollectionType } from '@/types/collection';
 
 interface AlbumGridProps {
-  albums: UserAlbumWithDetails[];
+  albums: UserReleaseWithDetails[];
   type: CollectionType;
   onRemove: (albumId: string) => void;
   onMove?: (albumId: string) => void; // Déplacer de wishlist vers collection

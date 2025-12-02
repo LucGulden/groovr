@@ -6,48 +6,12 @@ import {
   query,
   orderBy,
   limit,
-  serverTimestamp,
-  setDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { albumCache } from './cache';
-import type { Album, SpotifyAlbumData } from '@/types/album';
+import type { Album } from '@/types/album';
 
 const ALBUMS_COLLECTION = 'albums';
-
-/**
- * Crée un album dans Firestore et retourne le nouvel album
- * @param spotifyData - Données de l'album depuis Spotify
- * @returns L'album avec son ID Firestore
- */
-export async function createAlbum(spotifyData: SpotifyAlbumData): Promise<Album> {
-  try {
-    // L'album n'existe pas, le créer
-    const newAlbumRef = doc(collection(db, ALBUMS_COLLECTION));
-
-    const albumData = {
-      spotifyId: spotifyData.spotifyId,
-      title: spotifyData.title,
-      artist: spotifyData.artist,
-      year: spotifyData.year,
-      coverUrl: spotifyData.coverUrl,
-      spotifyUrl: spotifyData.spotifyUrl || null,
-      createdAt: serverTimestamp(),
-    };
-
-    await setDoc(newAlbumRef, albumData);
-
-    // Retourner l'album créé avec son ID
-    return {
-      id: newAlbumRef.id,
-      ...albumData,
-      createdAt: albumData.createdAt, // serverTimestamp() sera résolu par Firestore
-    } as Album;
-  } catch (error) {
-    console.error('Erreur lors de la récupération/création de l\'album:', error);
-    throw new Error('Impossible de récupérer ou créer l\'album');
-  }
-}
 
 /**
  * Récupère un album par son ID Firestore

@@ -1,22 +1,22 @@
 import ImageOptimized from './ImageOptimized';
-import type { CollectionType, UserAlbumWithDetails } from '@/types/collection';
+import type { CollectionType, UserReleaseWithDetails } from '@/types/collection';
 
-interface ProfileAlbumsProps {
-  loadingAlbums: boolean;
+interface ProfileReleasesProps {
+  loadingReleases: boolean;
   isOwnProfile: boolean;
-  albums: UserAlbumWithDetails[];
+  releases: UserReleaseWithDetails[];
   username: string;
   tab: CollectionType
 }
 
-export default function ProfileAlbums({ loadingAlbums, isOwnProfile, albums, username, tab }: ProfileAlbumsProps) {
+export default function ProfileReleases({ loadingReleases, isOwnProfile, releases, username, tab }: ProfileReleasesProps) {
   const messages = {
     icon: {
       collection: '💿',
       wishlist: '⭐'
     },
     empty: {
-      collection: 'Aucun album pour le moment',
+      collection: 'Aucun vinyle pour le moment',
       wishlist: 'Wishlist vide'
     },
     add: {
@@ -31,7 +31,7 @@ export default function ProfileAlbums({ loadingAlbums, isOwnProfile, albums, use
 
   return (
    <>
-    {loadingAlbums ? (
+    {loadingReleases ? (
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {[...Array(8)].map((_, i) => (
           <div key={i} className="animate-pulse">
@@ -41,7 +41,7 @@ export default function ProfileAlbums({ loadingAlbums, isOwnProfile, albums, use
           </div>
         ))}
       </div>
-    ) : albums.length === 0 ? (
+    ) : releases.length === 0 ? (
       <div className="py-16 text-center">
         <div className="mb-4 text-6xl">{messages.icon[tab]}</div>
         <h3 className="mb-2 text-xl font-semibold text-[var(--foreground)]">
@@ -55,13 +55,13 @@ export default function ProfileAlbums({ loadingAlbums, isOwnProfile, albums, use
       </div>
     ) : (
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {albums.map((userAlbum) => (
-          <div key={userAlbum.id} className="group relative overflow-hidden rounded-lg border border-[var(--background-lighter)] bg-[var(--background-light)] transition-all hover:border-[var(--primary)] hover:shadow-lg hover:shadow-[var(--primary)]/20">
+        {releases.map((userRelease) => (
+          <div key={userRelease.id} className="group relative overflow-hidden rounded-lg border border-[var(--background-lighter)] bg-[var(--background-light)] transition-all hover:border-[var(--primary)] hover:shadow-lg hover:shadow-[var(--primary)]/20">
             {/* Pochette */}
             <div className="relative aspect-square w-full overflow-hidden bg-[var(--background)]">
               <ImageOptimized
-                src={userAlbum.album.coverUrl}
-                alt={`${userAlbum.album.title} par ${userAlbum.album.artist}`}
+                src={userRelease.release.coverUrl}
+                alt={`${userRelease.release.title} par ${userRelease.release.artist}`}
                 fill
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
@@ -70,13 +70,13 @@ export default function ProfileAlbums({ loadingAlbums, isOwnProfile, albums, use
 
             {/* Informations */}
             <div className="p-4">
-              <h3 className="mb-1 line-clamp-1 font-semibold text-[var(--foreground)]" title={userAlbum.album.title}>
-                {userAlbum.album.title}
+              <h3 className="mb-1 line-clamp-1 font-semibold text-[var(--foreground)]" title={userRelease.release.title}>
+                {userRelease.release.title}
               </h3>
-              <p className="mb-1 line-clamp-1 text-sm text-[var(--foreground-muted)]" title={userAlbum.album.artist}>
-                {userAlbum.album.artist}
+              <p className="mb-1 line-clamp-1 text-sm text-[var(--foreground-muted)]" title={userRelease.release.artist}>
+                {userRelease.release.artist}
               </p>
-              <p className="text-xs text-[var(--foreground-muted)]">{userAlbum.album.year}</p>
+              <p className="text-xs text-[var(--foreground-muted)]">{userRelease.release.year}</p>
             </div>
           </div>
         ))}

@@ -5,12 +5,12 @@ import { useParams, notFound } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import ProfileHeader from '@/components/ProfileHeader';
 import { getUserByUsername } from '@/lib/user';
-import { subscribeToUserCollection, subscribeToUserWishlist } from '@/lib/user-albums';
+import { subscribeToUserCollection, subscribeToUserWishlist } from '@/lib/user-releases';
 import { getFollowStats } from '@/lib/follows';
 import type { User, ProfileStats } from '@/types/user';
-import type { UserAlbumWithDetails } from '@/types/collection';
+import type { UserReleaseWithDetails } from '@/types/collection';
 import Feed from '@/components/Feed';
-import ProfileAlbums from '@/components/profileAlbums';
+import ProfileReleases from '@/components/profileReleases';
 
 export default function ProfilePage() {
   const params = useParams();
@@ -19,14 +19,14 @@ export default function ProfilePage() {
   const username = params.username as string;
 
   const [profileUser, setProfileUser] = useState<User | null>(null);
-  const [stats, setStats] = useState<ProfileStats>({ albumsCount: 0, followersCount: 0, followingCount: 0 });
+  const [stats, setStats] = useState<ProfileStats>({ releasesCount: 0, followersCount: 0, followingCount: 0 });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'feed' | 'collection' | 'wishlist'>('feed');
 
   // Données de collection et wishlist
-  const [collection, setCollection] = useState<UserAlbumWithDetails[]>([]);
-  const [wishlist, setWishlist] = useState<UserAlbumWithDetails[]>([]);
-  const [loadingAlbums, setLoadingAlbums] = useState(false);
+  const [collection, setCollection] = useState<UserReleaseWithDetails[]>([]);
+  const [wishlist, setWishlist] = useState<UserReleaseWithDetails[]>([]);
+  const [loadingReleases, setLoadingReleases] = useState(false);
 
   // Charger l'utilisateur par username
   useEffect(() => {
@@ -65,33 +65,33 @@ export default function ProfilePage() {
     const canView = isOwnProfile || !profileUser.isPrivate;
 
     if (!canView) {
-      console.log('[Profile] Profil privé, pas d\'accès aux albums');
+      console.log('[Profile] Profil privé, pas d\'accès aux vinyles');
       return;
     }
 
-    setLoadingAlbums(true);
-    console.log(`[Profile] Chargement des albums de ${profileUser.username}...`);
+    setLoadingReleases(true);
+    console.log(`[Profile] Chargement des vinyles de ${profileUser.username}...`);
 
     // Subscribe à la collection
     const unsubscribeCollection = subscribeToUserCollection(
       profileUser.uid,
-      (albums) => {
-        console.log(`[Profile] Collection: ${albums.length} albums`);
-        setCollection(albums);
-        setLoadingAlbums(false);
+      (releases) => {
+        console.log(`[Profile] Collection: ${releases.length} vinyles`);
+        setCollection(releases);
+        setLoadingReleases(false);
       },
       (error) => {
         console.error('[Profile] Erreur collection:', error);
-        setLoadingAlbums(false);
+        setLoadingReleases(false);
       }
     );
 
     // Subscribe à la wishlist
     const unsubscribeWishlist = subscribeToUserWishlist(
       profileUser.uid,
-      (albums) => {
-        console.log(`[Profile] Wishlist: ${albums.length} albums`);
-        setWishlist(albums);
+      (releases) => {
+        console.log(`[Profile] Wishlist: ${releases.length} vinyles`);
+        setWishlist(releases);
       },
       (error) => {
         console.error('[Profile] Erreur wishlist:', error);
@@ -112,7 +112,7 @@ export default function ProfilePage() {
     try {
       const followStats = await getFollowStats(profileUser.uid);
       setStats({
-        albumsCount: collection.length,
+        releasesCount: collection.length,
         wishlistCount: wishlist.length,
         followersCount: followStats.followersCount,
         followingCount: followStats.followingCount,
@@ -120,7 +120,7 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Erreur lors du chargement des stats de follow:', error);
       setStats({
-        albumsCount: collection.length,
+        releasesCount: collection.length,
         wishlistCount: wishlist.length,
         followersCount: 0,
         followingCount: 0,
@@ -128,7 +128,7 @@ export default function ProfilePage() {
     }
   }, [profileUser, collection.length, wishlist.length]);
 
-  // Calculer les stats réelles basées sur les albums et follows
+  // Calculer les stats réelles basées sur les vinyles et follows
   useEffect(() => {
     loadFollowStats();
   }, [loadFollowStats]);
@@ -152,7 +152,7 @@ export default function ProfilePage() {
   }
 
   const isOwnProfile = currentUser?.uid === profileUser.uid;
-  const canViewAlbums = isOwnProfile || !profileUser.isPrivate;
+  const canViewReleases = isOwnProfile || !profileUser.isPrivate;
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
@@ -214,7 +214,7 @@ export default function ProfilePage() {
       {/* Tab Content */}
       <div className="mx-auto max-w-5xl px-6 py-12 sm:px-8">
         {/* Profil privé */}
-        {!canViewAlbums && (
+        {!canViewReleases && (
           <div className="py-16 text-center">
             <div className="mb-4 text-6xl">🔒</div>
             <h3 className="mb-2 text-xl font-semibold text-[var(--foreground)]">
@@ -227,19 +227,19 @@ export default function ProfilePage() {
         )}
 
         {/* Collection Tab */}
-        {canViewAlbums && activeTab === 'feed' && (
+        {canViewReleases && activeTab === 'feed' && (
           <>
             <Feed userId={profileUser.uid} profileFeed={true}/>
           </>
         )}
 
         {/* Collection Tab */}
-        {canViewAlbums && activeTab === 'collection' && (
+        {canViewReleases && activeTab === 'collection' && (
           <>
-            <ProfileAlbums
-              loadingAlbums={loadingAlbums}
+            <ProfileReleases
+              loadingReleases={loadingReleases}
               isOwnProfile={isOwnProfile}
-              albums={collection}
+              releases={collection}
               username={profileUser.username}
               tab='collection'
             />
@@ -247,12 +247,12 @@ export default function ProfilePage() {
         )}
 
         {/* Wishlist Tab */}
-        {canViewAlbums && activeTab === 'wishlist' && (
+        {canViewReleases && activeTab === 'wishlist' && (
           <>
-            <ProfileAlbums
-              loadingAlbums={loadingAlbums}
+            <ProfileReleases
+              loadingReleases={loadingReleases}
               isOwnProfile={isOwnProfile}
-              albums={wishlist}
+              releases={wishlist}
               username={profileUser.username}
               tab='wishlist'
             />

@@ -81,7 +81,7 @@ export interface UpdateProfileData {
  * Statistiques du profil utilisateur
  */
 export interface ProfileStats {
-  albumsCount: number;
+  releasesCount: number;
   wishlistCount?: number; // Optionnel pour compatibilité
   followersCount: number;
   followingCount: number;

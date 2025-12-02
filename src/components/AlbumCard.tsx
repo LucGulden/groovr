@@ -1,9 +1,9 @@
 import React from 'react';
-import type { Album, SpotifyAlbumData } from '@/types/album';
+import type { Album } from '@/types/album';
 import ImageOptimized from './ImageOptimized';
 
 interface AlbumCardProps {
-  album: SpotifyAlbumData | Album;
+  album: Album;
   actions?: React.ReactNode;
   onClick?: () => void;
   priority?: boolean; // Priority loading for first 3 albums (above-the-fold)
