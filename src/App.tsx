@@ -12,6 +12,7 @@ import Followers from './pages/Followers.tsx'
 import Following from './pages/Following.tsx'
 import Notifications from './pages/Notifications.tsx'
 import Search from './pages/Search.tsx'
+import Settings from './pages/Settings.tsx'
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/settings" element={<Settings />} />
 
           {/* Routes spécifiques AVANT la route générique */}
           <Route path="/profile/:username/followers" element={<Followers />} />

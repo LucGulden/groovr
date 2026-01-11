@@ -3,13 +3,35 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import Avatar from './Avatar.tsx'
 import { getUnreadCount, subscribeToNotifications } from '../lib/notifications.ts'
+import { getUserByUid } from '../lib/user'
+import type { User as AppUser } from '../types/user'
 
 export default function Navigation() {
   const { user, signOut, loading } = useAuth()
   const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [notificationsCount, setNotificationsCount] = useState(0)
+  const [appUser, setAppUser] = useState<AppUser | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Ajouter un useEffect pour charger les données utilisateur
+  useEffect(() => {
+    if (!user) return
+
+    getUserByUid(user.id).then(setAppUser).catch(console.error)
+  }, [user])
+
+  // Écouter les mises à jour du profil
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      if (user) {
+        getUserByUid(user.id).then(setAppUser).catch(console.error)
+      }
+    }
+
+    window.addEventListener('profile-updated', handleProfileUpdate)
+    return () => window.removeEventListener('profile-updated', handleProfileUpdate)
+  }, [user])
 
   useEffect(() => {
     if (!user) return
@@ -69,8 +91,7 @@ export default function Navigation() {
     }
   }
 
-  // Récupérer le username depuis les metadata ou email
-  const username = user?.user_metadata?.username || user?.email?.split('@')[0] || ''
+  const username = appUser?.username || user?.user_metadata?.username || user?.email?.split('@')[0] || ''
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--background-lighter)] bg-[var(--background)]/95 backdrop-blur-sm">
@@ -141,7 +162,7 @@ export default function Navigation() {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center gap-3 rounded-full transition-opacity hover:opacity-80"
               >
-                <Avatar src={user.user_metadata?.avatar_url} username={username} size="md" />
+                <Avatar src={appUser?.photo_url} username={username} size="md" />
                 <span className="hidden text-sm font-medium text-[var(--foreground)] md:block">
                   {username}
                 </span>
