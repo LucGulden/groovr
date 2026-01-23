@@ -15,6 +15,7 @@ interface AddVinylModalProps {
   userId: string;
   targetType?: UserVinylType;
   initialAlbum?: Album;
+  initialStep?: ModalStep;
 }
 
 type ModalStep = 'albumSearch' | 'createAlbum' | 'vinylSelection' | 'createVinyl' | 'vinylDetails';
@@ -26,10 +27,11 @@ export default function AddVinylModal({
   userId,
   targetType,
   initialAlbum,
+  initialStep,
 }: AddVinylModalProps) {
 
   const [currentStep, setCurrentStep] = useState<ModalStep>(
-    initialAlbum ? 'vinylSelection' : 'albumSearch'
+    initialStep ?? (initialAlbum ? 'vinylSelection' : 'albumSearch')
   );
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(initialAlbum || null);
   const [selectedVinyl, setSelectedVinyl] = useState<Vinyl | null>(null);
@@ -71,7 +73,8 @@ export default function AddVinylModal({
       if (initialAlbum) return; // Pas de retour si initialAlbum
       setCurrentStep('albumSearch');
       setSelectedAlbum(null);
-    } else if (currentStep === 'createAlbum') {
+    } else if (currentStep === 'createAlbum') { // Pas de retour si initialStep est 'createAlbum'
+      if (initialStep === 'createAlbum') return; 
       setCurrentStep('albumSearch');
     } else if (currentStep === 'vinylDetails') {
       setCurrentStep('vinylSelection');
@@ -132,7 +135,9 @@ export default function AddVinylModal({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {/* Bouton retour */}
-              {currentStep !== 'albumSearch' && (currentStep !== 'vinylSelection' || initialAlbum === undefined) && (
+              {currentStep !== 'albumSearch' && 
+              (currentStep !== 'vinylSelection' || !initialAlbum) &&
+              (currentStep !== 'createAlbum' || initialStep !== 'createAlbum') && (
                 <button
                   onClick={handleBack}
                   className="rounded-full p-2 text-[var(--foreground-muted)] hover:bg-[var(--background-lighter)] hover:text-[var(--foreground)] transition-colors"
@@ -264,7 +269,13 @@ export default function AddVinylModal({
               >
                 <CreateAlbumForm
                   onAlbumCreated={handleAlbumCreated}
-                  onCancel={() => setCurrentStep('albumSearch')}
+                  onCancel={() => {
+                    if (initialStep === 'createAlbum') {
+                      handleClose();
+                    } else {
+                      setCurrentStep('albumSearch');
+                    }
+                  }}
                   userId={userId}
                 />
               </motion.div>
