@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getVinylsByAlbum, hasVinyl } from '../lib/vinyls';
 import type { Album, Vinyl } from '../types/vinyl';
 import VinylImage from './VinylImage';
-import VinylPressingCard from './VinylPressingCard';
+import VinylCard from './VinylCard';
 
 interface VinylSelectionProps {
   album: Album;
@@ -141,7 +141,7 @@ export default function VinylSelection({ album, userId, onVinylSelect, onCreateV
               const status = statuses.get(vinyl.id);
 
               return (
-                <VinylPressingCard
+                <VinylCard
                   key={vinyl.id}
                   vinyl={vinyl}
                   albumCoverUrl={album.cover_url || undefined}

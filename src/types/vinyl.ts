@@ -35,6 +35,7 @@ export interface UserVinyl {
 
 export interface UserVinylWithDetails extends UserVinyl {
   vinyl: Vinyl;
+  album: Album;
 }
 
 export type UserVinylType = 'collection' | 'wishlist';

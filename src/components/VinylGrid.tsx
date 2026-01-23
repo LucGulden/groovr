@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import VinylCard from './VinylCard';
 import Button from './Button';
-import type { UserVinylType, UserVinylWithDetails } from '../types/vinyl';
+import type { UserVinylType, UserVinylWithDetails, Vinyl, Album } from '../types/vinyl';
 
 interface VinylGridProps {
   vinyls: UserVinylWithDetails[];
@@ -12,8 +12,7 @@ interface VinylGridProps {
   total: number;
   onLoadMore: () => void;
   onRefresh: () => void;
-  onRemove?: (vinylId: string) => Promise<void>;
-  onMoveToCollection?: (vinylId: string) => Promise<void>;
+  onVinylClick: (vinyl: Vinyl, album: Album) => void;  // Nouveau callback
   emptyMessage?: string;
   emptyIcon?: string;
   type: UserVinylType;
@@ -27,8 +26,7 @@ export default function VinylGrid({
   error,
   onLoadMore,
   onRefresh,
-  onRemove,
-  onMoveToCollection,
+  onVinylClick,
   emptyMessage = 'Aucun vinyle pour le moment',
   emptyIcon = '💿',
   type,
@@ -109,57 +107,9 @@ export default function VinylGrid({
           <VinylCard
             key={userVinyl.id}
             vinyl={userVinyl.vinyl}
-            actions={
-              <div className="flex flex-col gap-2 w-full">
-                {/* Bouton déplacer vers collection (wishlist uniquement) */}
-                {type === 'wishlist' && onMoveToCollection && (
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMoveToCollection(userVinyl.release_id);
-                    }}
-                    variant="primary"
-                    className="w-full"
-                  >
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      J'ai acheté
-                    </span>
-                  </Button>
-                )}
-
-                {/* Bouton supprimer */}
-                {onRemove && (
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemove(userVinyl.release_id);
-                    }}
-                    variant="outline"
-                    className="w-full border-red-500/30 text-red-500 hover:border-red-500 hover:bg-red-500/10"
-                  >
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                      Retirer
-                    </span>
-                  </Button>
-                )}
-              </div>
-            }
+            albumCoverUrl={userVinyl.album?.cover_url}
+            onClick={() => onVinylClick(userVinyl.vinyl, userVinyl.album)}
+            variant="compact"
           />
         ))}
       </div>

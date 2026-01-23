@@ -16,7 +16,8 @@ export async function getUserVinyls(
     .from('user_vinyls')
     .select(`
       *,
-      vinyl:vinyls(*)
+      vinyl:vinyls(*),
+      album:vinyls(album:albums(*))
     `)
     .eq('user_id', userId)
     .eq('type', type)
@@ -34,7 +35,11 @@ export async function getUserVinyls(
     throw new Error(`Erreur lors de la récupération des vinyles: ${error.message}`);
   }
 
-  return (data || []) as UserVinylWithDetails[];
+  // Transformer la structure pour avoir album au même niveau que vinyl
+  return (data || []).map((item: any) => ({
+    ...item,
+    album: item.album?.album || null,
+  })) as UserVinylWithDetails[];
 }
 
 /**

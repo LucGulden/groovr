@@ -16,6 +16,8 @@ interface AddVinylModalProps {
   targetType?: UserVinylType;
   initialAlbum?: Album;
   initialStep?: ModalStep;
+  initialVinyl?: Vinyl;
+  isOwnProfile?: boolean;
 }
 
 type ModalStep = 'albumSearch' | 'createAlbum' | 'vinylSelection' | 'createVinyl' | 'vinylDetails';
@@ -28,13 +30,15 @@ export default function AddVinylModal({
   targetType,
   initialAlbum,
   initialStep,
+  initialVinyl,
+  isOwnProfile = false,
 }: AddVinylModalProps) {
 
   const [currentStep, setCurrentStep] = useState<ModalStep>(
-    initialStep ?? (initialAlbum ? 'vinylSelection' : 'albumSearch')
+    initialStep ?? (initialVinyl ? 'vinylDetails' : initialAlbum ? 'vinylSelection' : 'albumSearch')
   );
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(initialAlbum || null);
-  const [selectedVinyl, setSelectedVinyl] = useState<Vinyl | null>(null);
+  const [selectedVinyl, setSelectedVinyl] = useState<Vinyl | null>(initialVinyl || null);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +81,7 @@ export default function AddVinylModal({
       if (initialStep === 'createAlbum') return; 
       setCurrentStep('albumSearch');
     } else if (currentStep === 'vinylDetails') {
+      if (initialVinyl) return;  // Pas de retour si initialVinyl
       setCurrentStep('vinylSelection');
       setSelectedVinyl(null);
     } else if (currentStep === 'createVinyl') {
@@ -137,6 +142,7 @@ export default function AddVinylModal({
               {/* Bouton retour */}
               {currentStep !== 'albumSearch' && 
               (currentStep !== 'vinylSelection' || !initialAlbum) &&
+              (currentStep !== 'vinylDetails' || !initialVinyl) &&
               (currentStep !== 'createAlbum' || initialStep !== 'createAlbum') && (
                 <button
                   onClick={handleBack}
@@ -255,6 +261,8 @@ export default function AddVinylModal({
                   userId={userId}
                   onConfirm={handleAddVinyl}
                   targetType={targetType}
+                  isOwnProfile={isOwnProfile}
+                  onActionComplete={handleSuccessClose}
                 />
               </motion.div>
             )}

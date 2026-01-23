@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import VinylGrid from './VinylGrid';
+import AddVinylModal from './AddVinylModal';
 import { useVinylsPagination } from '../hooks/useVinylsPagination';
-import type { UserVinylType } from '../types/vinyl';
+import { useAuth } from '../hooks/useAuth';
+import type { UserVinylType, Vinyl, Album } from '../types/vinyl';
 import { useEffect } from 'react';
 
 interface ProfileReleasesProps {
@@ -18,6 +21,7 @@ export default function ProfileReleases({
   username,
   onOpenAddVinyl
 }: ProfileReleasesProps) {
+  const { user } = useAuth();
   const {
     vinyls,
     loading,
@@ -26,9 +30,12 @@ export default function ProfileReleases({
     error,
     total,
     loadMore,
-    removeVinylFromList,
     refresh
   } = useVinylsPagination({ userId, type });
+
+  const [selectedVinyl, setSelectedVinyl] = useState<Vinyl | null>(null);
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const handleVinylAdded = () => {
@@ -38,6 +45,24 @@ export default function ProfileReleases({
     window.addEventListener('vinyl-added', handleVinylAdded);
     return () => window.removeEventListener('vinyl-added', handleVinylAdded);
   }, [refresh]);
+
+  const handleVinylClick = (vinyl: Vinyl, album: Album) => {
+    setSelectedVinyl(vinyl);
+    setSelectedAlbum(album);
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedVinyl(null);
+    setSelectedAlbum(null);
+  };
+
+  const handleModalSuccess = () => {
+    handleModalClose();
+    refresh();
+    window.dispatchEvent(new Event('vinyl-added'));
+  };
 
   // Empty state
   if (!loading && vinyls.length === 0) {
@@ -110,15 +135,24 @@ export default function ProfileReleases({
         total={total}
         type={type}
         onLoadMore={loadMore}
-        onRefresh={async () => {}}
-        onRemove={
-          isOwnProfile
-            ? async (vinylId: string) => {
-                removeVinylFromList(vinylId);
-              }
-            : undefined
-        }
+        onRefresh={refresh}
+        onVinylClick={handleVinylClick}
       />
+
+      {/* Modal détail vinyle */}
+      {user && selectedVinyl && selectedAlbum && (
+        <AddVinylModal
+          key={isModalOpen ? 'modal-open' : 'modal-closed'}
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          onSuccess={handleModalSuccess}
+          userId={user.id}
+          initialAlbum={selectedAlbum}
+          initialVinyl={selectedVinyl}
+          targetType={type}
+          isOwnProfile={isOwnProfile}
+        />
+      )}
     </div>
   );
 }
