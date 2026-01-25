@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import ProfileHeader from '../components/ProfileHeader';
-import ProfileReleases from '../components/ProfileReleases';
+import ProfileVinyls from '../components/ProfileVinyls';
 import Feed from '../components/Feed';
 import { supabase } from '../supabaseClient';
 import { getFollowStats } from '../lib/follows';
@@ -110,7 +110,7 @@ export default function ProfilePage() {
     }
   };
 
-  // Fonction pour ouvrir le modal depuis ProfileReleases
+  // Fonction pour ouvrir le modal depuis ProfileVinyls
 const handleOpenAddVinyl = () => {
   setIsModalOpen(true);
 };
@@ -129,7 +129,7 @@ const handleModalSuccess = async () => {
         wishlistCount: vinylStats.wishlistCount,
       }));
       
-      // Émettre un event pour que ProfileReleases se rafraîchisse
+      // Émettre un event pour que ProfileVinyls se rafraîchisse
       window.dispatchEvent(new Event('vinyl-added'));
     } catch (error) {
       console.error('Erreur lors du rafraîchissement des stats:', error);
@@ -223,7 +223,7 @@ const handleModalSuccess = async () => {
 
         {/* Collection Tab */}
         {activeTab === 'collection' && (
-          <ProfileReleases
+          <ProfileVinyls
             userId={profileUser.uid}
             type="collection"
             isOwnProfile={isOwnProfile}
@@ -234,7 +234,7 @@ const handleModalSuccess = async () => {
 
         {/* Wishlist Tab */}
         {activeTab === 'wishlist' && (
-          <ProfileReleases
+          <ProfileVinyls
             userId={profileUser.uid}
             type="wishlist"
             isOwnProfile={isOwnProfile}

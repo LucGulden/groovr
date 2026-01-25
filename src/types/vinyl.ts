@@ -1,3 +1,11 @@
+export interface Artist {
+  id: string;
+  name: string;
+  spotify_id: string | null;
+  image_url: string | null;
+  created_at: string;
+}
+
 export interface Vinyl {
   id: string;
   album_id: string;

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import SearchAlbumsTab from '../components/SearchAlbumsTab';
+import SearchArtistsTab from '../components/SearchArtistsTab';
 import SearchUsersTab from '../components/SearchUsersTab';
 
-type SearchTab = 'albums' | 'users';
+type SearchTab = 'albums' | 'artists' | 'users';
 
 export default function Search() {
   const [activeTab, setActiveTab] = useState<SearchTab>('albums');
@@ -41,6 +42,8 @@ export default function Search() {
               placeholder={
                 activeTab === 'albums'
                   ? 'Rechercher un album ou un artiste...'
+                  : activeTab === 'artists'
+                  ? 'Rechercher un artiste...'
                   : 'Rechercher par nom d\'utilisateur ou nom...'
               }
               className="w-full rounded-lg border border-[var(--background-lighter)] bg-[var(--background-light)] py-3 pl-12 pr-4 text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
@@ -65,6 +68,19 @@ export default function Search() {
               )}
             </button>
             <button
+              onClick={() => setActiveTab('artists')}
+              className={`relative py-4 text-sm font-semibold transition-colors ${
+                activeTab === 'artists'
+                  ? 'text-[var(--primary)]'
+                  : 'text-[var(--foreground-muted)] hover:text-[var(--foreground)]'
+              }`}
+            >
+              Artistes
+              {activeTab === 'artists' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)]"></div>
+              )}
+            </button>
+            <button
               onClick={() => setActiveTab('users')}
               className={`relative py-4 text-sm font-semibold transition-colors ${
                 activeTab === 'users'
@@ -82,6 +98,7 @@ export default function Search() {
 
         {/* Contenu des tabs */}
         {activeTab === 'albums' && <SearchAlbumsTab query={query} />}
+        {activeTab === 'artists' && <SearchArtistsTab query={query} />}
         {activeTab === 'users' && <SearchUsersTab query={query} />}
       </div>
     </div>

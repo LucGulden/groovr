@@ -99,12 +99,16 @@ export async function getFeedPosts(
         vinyl:vinyls!vinyl_id (
           id,
           title,
-          artist,
           cover_url,
+          vinyl_artists(
+            artist:artists(name)
+          ),
           album:albums!album_id (
             title,
-            artist,
-            cover_url
+            cover_url,
+            album_artists(
+              artist:artists(name)
+            )
           )
         )
       `)
@@ -187,10 +191,18 @@ export async function getFeedPosts(
 
     // Transformer les données en PostWithDetails
     const posts: PostWithDetails[] = data.map((post: any) => {
+      // Extraire les artistes du vinyle
+      const vinylArtists = post.vinyl?.vinyl_artists?.map((va: any) => va.artist?.name).filter(Boolean) || [];
+      const vinylArtist = vinylArtists.join(', ') || 'Artiste inconnu';
+      
+      // Extraire les artistes de l'album
+      const albumArtists = post.vinyl?.album?.album_artists?.map((aa: any) => aa.artist?.name).filter(Boolean) || [];
+      const albumArtist = albumArtists.join(', ') || vinylArtist;
+
       // Récupérer les infos de l'album (depuis le vinyle ou l'album lié)
       const albumInfo = post.vinyl?.album || {
         title: post.vinyl?.title || 'Album inconnu',
-        artist: post.vinyl?.artist || 'Artiste inconnu',
+        artist: vinylArtist,
         cover_url: post.vinyl?.cover_url,
       }
 
@@ -207,7 +219,7 @@ export async function getFeedPosts(
         },
         album: {
           title: albumInfo.title,
-          artist: albumInfo.artist,
+          artist: albumArtist,
           coverUrl: albumInfo.cover_url,
         },
       }

@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { searchAlbums } from '../lib/vinyls';
+import { searchAlbums, getAlbumsByArtist } from '../lib/vinyls';
 import type { Album } from '../types/vinyl';
 import AlbumCard from './AlbumCard';
+import type { Artist } from '../types/vinyl';
 
 interface AlbumSearchProps {
   onAlbumSelect: (album: Album) => void;
   onCreateAlbum: () => void;
+  artist?: Artist;
 }
 
-export default function AlbumSearch({ onAlbumSelect, onCreateAlbum }: AlbumSearchProps) {
+export default function AlbumSearch({ onAlbumSelect, onCreateAlbum, artist }: AlbumSearchProps) {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -16,10 +18,51 @@ export default function AlbumSearch({ onAlbumSelect, onCreateAlbum }: AlbumSearc
 
   const hasSearched = query.trim().length > 0;
 
+  // Charger les albums de l'artiste au montage si artistId est défini
+  useEffect(() => {
+    if (artist) {
+      setIsLoading(true);
+      setError(null);
+      
+      getAlbumsByArtist(artist.id)
+        .then((results) => {
+          setSearchResults(results);
+        })
+        .catch((err) => {
+          console.error('[Search] Erreur lors du chargement des albums:', err);
+          setError(err instanceof Error ? err : new Error('Erreur lors du chargement'));
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [artist]);
+
   // Debounce search
   useEffect(() => {
-    if (!query || query.trim().length < 2) {
-      setSearchResults([]);
+    if (!query || query.trim().length < 1) {
+      // Si pas d'artiste, vider les résultats
+      if (!artist) {
+        setSearchResults([]);
+        return;
+      }
+      
+      // Si artiste défini et query vide, recharger tous ses albums
+      setIsLoading(true);
+      setError(null);
+      
+      getAlbumsByArtist(artist.id)
+        .then((results) => {
+          setSearchResults(results);
+        })
+        .catch((err) => {
+          console.error('[Search] Erreur lors du chargement des albums:', err);
+          setError(err instanceof Error ? err : new Error('Erreur lors du chargement'));
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+      
       return;
     }
 
@@ -28,7 +71,21 @@ export default function AlbumSearch({ onAlbumSelect, onCreateAlbum }: AlbumSearc
       setError(null);
 
       try {
-        const results = await searchAlbums(query);
+        let results: Album[];
+        
+        if (artist) {
+          // Recherche filtrée sur les albums de l'artiste
+          const artistAlbums = await getAlbumsByArtist(artist.id);
+          const searchLower = query.toLowerCase();
+          results = artistAlbums.filter(album => 
+            album.title.toLowerCase().includes(searchLower) ||
+            album.artist?.toLowerCase().includes(searchLower)
+          );
+        } else {
+          // Recherche globale
+          results = await searchAlbums(query);
+        }
+        
         setSearchResults(results);
       } catch (err) {
         console.error('[Search] Erreur lors de la recherche:', err);
@@ -39,7 +96,7 @@ export default function AlbumSearch({ onAlbumSelect, onCreateAlbum }: AlbumSearc
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, artist]);
 
   return (
     <div className="w-full">
@@ -65,7 +122,7 @@ export default function AlbumSearch({ onAlbumSelect, onCreateAlbum }: AlbumSearc
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher un album ou un artiste..."
+            placeholder={artist ? "Filtrer les albums..." : "Rechercher un album ou un artiste..."}
             className="w-full rounded-lg border border-[var(--background-lighter)] bg-[var(--background-light)] py-4 pl-12 pr-4 text-lg text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
             autoFocus
           />
@@ -76,7 +133,10 @@ export default function AlbumSearch({ onAlbumSelect, onCreateAlbum }: AlbumSearc
           )}
         </div>
         <p className="mt-2 text-sm text-[var(--foreground-muted)]">
-          Recherchez dans votre bibliothèque d'albums
+          {artist 
+            ? `Filtrez parmi les albums de ${artist.name || 'cet artiste'}`
+            : 'Recherchez dans notre bibliothèque d\'albums'
+          }
         </p>
       </div>
       
@@ -153,7 +213,7 @@ export default function AlbumSearch({ onAlbumSelect, onCreateAlbum }: AlbumSearc
       )}
 
       {/* État initial */}
-      {!isLoading && !hasSearched && (
+      {!isLoading && !hasSearched && !artist && (
         <div className="py-16 text-center">
           <div className="mb-4 text-6xl">💿</div>
           <h3 className="mb-2 text-xl font-semibold text-[var(--foreground)]">

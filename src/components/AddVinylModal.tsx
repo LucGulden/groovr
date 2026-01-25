@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { addVinylToUser } from '../lib/vinyls';
-import type { Album, UserVinylType, Vinyl } from '../types/vinyl';
+import type { Album, Artist, UserVinylType, Vinyl } from '../types/vinyl';
 import AlbumSearch from './AlbumSearch.tsx';
 import VinylSelection from './VinylSelection.tsx';
 import VinylDetails from './VinylDetails.tsx';
@@ -18,6 +18,7 @@ interface AddVinylModalProps {
   initialStep?: ModalStep;
   initialVinyl?: Vinyl;
   isOwnProfile?: boolean;
+  artist?: Artist;
 }
 
 type ModalStep = 'albumSearch' | 'createAlbum' | 'vinylSelection' | 'createVinyl' | 'vinylDetails';
@@ -32,6 +33,7 @@ export default function AddVinylModal({
   initialStep,
   initialVinyl,
   isOwnProfile = false,
+  artist,
 }: AddVinylModalProps) {
 
   const [currentStep, setCurrentStep] = useState<ModalStep>(
@@ -156,19 +158,27 @@ export default function AddVinylModal({
               )}
 
               {/* Titre dynamique */}
-              <h2 className="text-2xl font-bold text-[var(--foreground)]">
-                {currentStep === 'albumSearch' && (
-                  targetType === 'collection'
-                    ? 'Ajouter à ma collection'
-                    : targetType === 'wishlist'
-                    ? 'Ajouter à ma wishlist'
-                    : 'Rechercher un album'
+              <div>
+                <h2 className="text-2xl font-bold text-[var(--foreground)]">
+                  {currentStep === 'albumSearch' && (
+                    targetType === 'collection'
+                      ? 'Ajouter à ma collection'
+                      : targetType === 'wishlist'
+                      ? 'Ajouter à ma wishlist'
+                      : 'Rechercher un album'
+                  )}
+                  {currentStep === 'createAlbum' && 'Créer un album'}
+                  {currentStep === 'vinylSelection' && 'Choisir un pressage'}
+                  {currentStep === 'createVinyl' && 'Créer un pressage'}
+                  {currentStep === 'vinylDetails' && 'Confirmer l\'ajout'}
+                </h2>
+                {/* Sous-titre pour recherche par artiste */}
+                {currentStep === 'albumSearch' && artist && artist?.name && (
+                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                    Albums de <span className="text-[var(--primary)]">{artist.name}</span>
+                  </p>
                 )}
-                {currentStep === 'createAlbum' && 'Créer un album'}
-                {currentStep === 'vinylSelection' && 'Choisir un pressage'}
-                {currentStep === 'createVinyl' && 'Créer un pressage'}
-                {currentStep === 'vinylDetails' && 'Confirmer l\'ajout'}
-              </h2>
+              </div>
             </div>
 
             <button
@@ -226,7 +236,8 @@ export default function AddVinylModal({
                 <AlbumSearch 
                   onAlbumSelect={handleSelectAlbum}
                   onCreateAlbum={handleCreateAlbum}
-                 />
+                  artist={artist}
+                />
               </motion.div>
             )}
 

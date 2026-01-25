@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import type { Album, Vinyl, UserVinyl, UserVinylWithDetails, UserVinylType } from '../types/vinyl';
+import type { Album, Vinyl, UserVinyl, UserVinylWithDetails, UserVinylType, Artist } from '../types/vinyl';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -16,8 +16,20 @@ export async function getUserVinyls(
     .from('user_vinyls')
     .select(`
       *,
-      vinyl:vinyls(*),
-      album:vinyls(album:albums(*))
+      vinyl:vinyls(
+        *,
+        vinyl_artists(
+          artist:artists(name)
+        )
+      ),
+      album:vinyls(
+        album:albums(
+          *,
+          album_artists(
+            artist:artists(name)
+          )
+        )
+      )
     `)
     .eq('user_id', userId)
     .eq('type', type)
@@ -36,10 +48,29 @@ export async function getUserVinyls(
   }
 
   // Transformer la structure pour avoir album au même niveau que vinyl
-  return (data || []).map((item: any) => ({
-    ...item,
-    album: item.album?.album || null,
-  })) as UserVinylWithDetails[];
+  return (data || []).map((item: any) => {
+    // Extraire les artistes du vinyle
+    const vinylArtists = item.vinyl?.vinyl_artists?.map((va: any) => va.artist?.name).filter(Boolean) || [];
+    const vinyl = {
+      ...item.vinyl,
+      artist: vinylArtists.join(', ') || 'Artiste inconnu',
+      vinyl_artists: undefined,
+    };
+
+    // Extraire les artistes de l'album
+    const albumArtists = item.album?.album?.album_artists?.map((aa: any) => aa.artist?.name).filter(Boolean) || [];
+    const album = item.album?.album ? {
+      ...item.album.album,
+      artist: albumArtists.join(', ') || 'Artiste inconnu',
+      album_artists: undefined,
+    } : null;
+
+    return {
+      ...item,
+      vinyl,
+      album,
+    };
+  }) as UserVinylWithDetails[];
 }
 
 /**
@@ -181,7 +212,7 @@ export async function getVinylStats(userId: string): Promise<{
 }
 
 /**
- * Recherche d'albums dans la base de données
+ * Recherche d'albums dans la base de données par titre ou artiste
  */
 export async function searchAlbums(
   query: string,
@@ -193,18 +224,75 @@ export async function searchAlbums(
 
   const searchTerm = `%${query.trim()}%`;
 
-  const { data, error } = await supabase
+  // 1. Chercher par titre d'album (avec artistes)
+  const { data: albumsByTitle, error: titleError } = await supabase
     .from('albums')
-    .select('*')
-    .or(`title.ilike.${searchTerm},artist.ilike.${searchTerm}`)
-    .order('artist', { ascending: true })
+    .select(`
+      *,
+      album_artists(
+        artist:artists(name)
+      )
+    `)
+    .ilike('title', searchTerm)
     .limit(limit);
 
-  if (error) {
-    throw new Error(`Erreur lors de la recherche: ${error.message}`);
+  if (titleError) {
+    throw new Error(`Erreur lors de la recherche: ${titleError.message}`);
   }
 
-  return data as Album[];
+  // 2. Chercher par artiste (via la jointure album_artists)
+  const { data: matchingArtists, error: artistError } = await supabase
+    .from('artists')
+    .select('id')
+    .ilike('name', searchTerm);
+
+  if (artistError) {
+    throw new Error(`Erreur lors de la recherche: ${artistError.message}`);
+  }
+
+  let albumsByArtistData: any[] = [];
+  if (matchingArtists && matchingArtists.length > 0) {
+    const artistIds = matchingArtists.map(a => a.id);
+    
+    const { data: artistAlbums, error: artistAlbumsError } = await supabase
+      .from('album_artists')
+      .select(`
+        album:albums(
+          *,
+          album_artists(
+            artist:artists(name)
+          )
+        )
+      `)
+      .in('artist_id', artistIds)
+      .limit(limit);
+
+    if (artistAlbumsError) {
+      throw new Error(`Erreur lors de la recherche: ${artistAlbumsError.message}`);
+    }
+
+    albumsByArtistData = (artistAlbums || [])
+      .map((item: any) => item.album)
+      .filter(Boolean);
+  }
+
+  // 3. Fusionner et dédupliquer par ID
+  const allAlbums = [...(albumsByTitle || []), ...albumsByArtistData];
+  const uniqueAlbums = Array.from(
+    new Map(allAlbums.map(album => [album.id, album])).values()
+  );
+
+  // 4. Transformer pour extraire le nom de l'artiste
+  const transformedAlbums = uniqueAlbums.map((album: any) => {
+    const artists = album.album_artists?.map((aa: any) => aa.artist?.name).filter(Boolean) || [];
+    return {
+      ...album,
+      artist: artists.join(', ') || 'Artiste inconnu',
+      album_artists: undefined, // Retirer la jointure du résultat final
+    };
+  });
+
+  return transformedAlbums.slice(0, limit);
 }
 
 /**
@@ -213,15 +301,28 @@ export async function searchAlbums(
 export async function getVinylsByAlbum(albumId: string): Promise<Vinyl[]> {
   const { data, error } = await supabase
     .from('vinyls')
-    .select('*')
+    .select(`
+      *,
+      vinyl_artists(
+        artist:artists(name)
+      )
+    `)
     .eq('album_id', albumId)
-    .order('year', { ascending: false }); // Plus récent en premier
+    .order('year', { ascending: false });
 
   if (error) {
     throw new Error(`Erreur lors de la récupération des vinyles: ${error.message}`);
   }
 
-  return data as Vinyl[];
+  // Transformer pour extraire les artistes
+  return (data || []).map((vinyl: any) => {
+    const artists = vinyl.vinyl_artists?.map((va: any) => va.artist?.name).filter(Boolean) || [];
+    return {
+      ...vinyl,
+      artist: artists.join(', ') || 'Artiste inconnu',
+      vinyl_artists: undefined,
+    };
+  }) as Vinyl[];
 }
 
 
@@ -239,25 +340,47 @@ export interface CreateAlbumInput {
 }
 
 export async function createAlbum(input: CreateAlbumInput): Promise<Album> {
-  const { data, error } = await supabase
-    .from('albums')
-    .insert({
-      title: input.title,
-      artist: input.artist,
-      year: input.year,
-      cover_url: input.coverUrl,
-      spotify_id: input.spotifyId || null,
-      spotify_url: input.spotifyUrl || null,
-      created_by: input.createdBy,
-    })
-    .select()
-    .single();
+  // Appeler la fonction RPC qui gère artiste + album + relation
+  const { data: albumId, error: rpcError } = await supabase.rpc(
+    'create_album_with_artist',
+    {
+      p_title: input.title,
+      p_artist_name: input.artist,
+      p_year: input.year,
+      p_cover_url: input.coverUrl,
+      p_spotify_id: input.spotifyId || null,
+      p_spotify_url: input.spotifyUrl || null,
+      p_created_by: input.createdBy,
+    }
+  );
 
-  if (error) {
-    throw new Error(`Erreur lors de la création de l'album: ${error.message}`);
+  if (rpcError) {
+    throw new Error(`Erreur lors de la création de l'album: ${rpcError.message}`);
   }
 
-  return data as Album;
+  // Récupérer l'album complet avec ses artistes
+  const { data: album, error: fetchError } = await supabase
+    .from('albums')
+    .select(`
+      *,
+      album_artists(
+        artist:artists(name)
+      )
+    `)
+    .eq('id', albumId)
+    .single();
+
+  if (fetchError) {
+    throw new Error(`Erreur lors de la récupération de l'album: ${fetchError.message}`);
+  }
+
+  // Transformer pour avoir le champ artist
+  const artists = album.album_artists?.map((aa: any) => aa.artist?.name).filter(Boolean) || [];
+  return {
+    ...album,
+    artist: artists.join(', ') || 'Artiste inconnu',
+    album_artists: undefined,
+  } as Album;
 }
 
 /**
@@ -298,28 +421,50 @@ export interface CreateVinylInput {
 }
 
 export async function createVinyl(input: CreateVinylInput): Promise<Vinyl> {
-  const { data, error } = await supabase
-    .from('vinyls')
-    .insert({
-      album_id: input.albumId,
-      title: input.title,
-      artist: input.artist,
-      year: input.year,
-      label: input.label,
-      catalog_number: input.catalogNumber,
-      country: input.country,
-      format: input.format,
-      cover_url: input.coverUrl,
-      created_by: input.createdBy,
-    })
-    .select()
-    .single();
+  // Appeler la fonction RPC qui gère artiste + vinyle + relation
+  const { data: vinylId, error: rpcError } = await supabase.rpc(
+    'create_vinyl_with_artist',
+    {
+      p_album_id: input.albumId,
+      p_title: input.title,
+      p_artist_name: input.artist,
+      p_year: input.year,
+      p_label: input.label,
+      p_catalog_number: input.catalogNumber,
+      p_country: input.country,
+      p_format: input.format,
+      p_cover_url: input.coverUrl,
+      p_created_by: input.createdBy,
+    }
+  );
 
-  if (error) {
-    throw new Error(`Erreur lors de la création du vinyle: ${error.message}`);
+  if (rpcError) {
+    throw new Error(`Erreur lors de la création du vinyle: ${rpcError.message}`);
   }
 
-  return data as Vinyl;
+  // Récupérer le vinyle complet avec ses artistes
+  const { data: vinyl, error: fetchError } = await supabase
+    .from('vinyls')
+    .select(`
+      *,
+      vinyl_artists(
+        artist:artists(name)
+      )
+    `)
+    .eq('id', vinylId)
+    .single();
+
+  if (fetchError) {
+    throw new Error(`Erreur lors de la récupération du vinyle: ${fetchError.message}`);
+  }
+
+  // Transformer pour avoir le champ artist
+  const artists = vinyl.vinyl_artists?.map((va: any) => va.artist?.name).filter(Boolean) || [];
+  return {
+    ...vinyl,
+    artist: artists.join(', ') || 'Artiste inconnu',
+    vinyl_artists: undefined,
+  } as Vinyl;
 }
 
 /**
@@ -348,4 +493,65 @@ export async function updateVinylCover(vinylId: string, coverUrl: string): Promi
   if (error) {
     throw new Error(`Erreur lors de la mise à jour de la cover: ${error.message}`);
   }
+}
+
+/**
+ * Recherche d'artistes par nom
+ */
+export async function searchArtists(
+  query: string,
+  limit: number = 20
+): Promise<Artist[]> {
+  if (!query || query.trim().length < 2) {
+    return [];
+  }
+
+  const searchTerm = `%${query.trim()}%`;
+
+  const { data, error } = await supabase
+    .from('artists')
+    .select('*')
+    .ilike('name', searchTerm)
+    .order('name', { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Erreur lors de la recherche d'artistes: ${error.message}`);
+  }
+
+  return data as Artist[];
+}
+
+/**
+ * Récupère les albums d'un artiste via la jointure album_artists
+ */
+export async function getAlbumsByArtist(artistId: string): Promise<Album[]> {
+  const { data, error } = await supabase
+    .from('album_artists')
+    .select(`
+      album:albums(
+        *,
+        album_artists(
+          artist:artists(name)
+        )
+      )
+    `)
+    .eq('artist_id', artistId);
+
+  if (error) {
+    throw new Error(`Erreur lors de la récupération des albums: ${error.message}`);
+  }
+
+  // Transformer la structure pour extraire les albums avec leurs artistes
+  return (data || [])
+    .map((item: any) => {
+      if (!item.album) return null;
+      const artists = item.album.album_artists?.map((aa: any) => aa.artist?.name).filter(Boolean) || [];
+      return {
+        ...item.album,
+        artist: artists.join(', ') || 'Artiste inconnu',
+        album_artists: undefined,
+      };
+    })
+    .filter(Boolean) as Album[];
 }

@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import type { UserVinylType, Vinyl, Album } from '../types/vinyl';
 import { useEffect } from 'react';
 
-interface ProfileReleasesProps {
+interface ProfileVinylsProps {
   userId: string;
   type: UserVinylType;
   isOwnProfile: boolean;
@@ -14,13 +14,13 @@ interface ProfileReleasesProps {
   onOpenAddVinyl?: () => void;
 }
 
-export default function ProfileReleases({
+export default function ProfileVinyls({
   userId,
   type,
   isOwnProfile,
   username,
   onOpenAddVinyl
-}: ProfileReleasesProps) {
+}: ProfileVinylsProps) {
   const { user } = useAuth();
   const {
     vinyls,
