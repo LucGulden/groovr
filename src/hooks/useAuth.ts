@@ -75,24 +75,6 @@ export function useAuth() {
     }
   }
 
-  const signInWithGoogle = async () => {
-    try {
-      setError(null)
-      const { data, error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/feed`,
-        },
-      })
-
-      if (signInError) throw signInError
-      return data
-    } catch (err) {
-      setError(err as AuthError)
-      throw err
-    }
-  }
-
   const signOut = async () => {
     try {
       setError(null)
@@ -110,7 +92,6 @@ export function useAuth() {
     error,
     signUp,
     signInWithPassword,
-    signInWithGoogle,
     signOut,
   }
 }
