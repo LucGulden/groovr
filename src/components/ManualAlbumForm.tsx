@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createAlbum, updateAlbumCover } from '../lib/vinyls'
 import { uploadAlbumCover, generateImagePreview } from '../lib/covers'
 import type { Album } from '../types/vinyl'
-import Button from './Button';
+import Button from './Button'
 
 interface ManualAlbumFormProps {
   onAlbumCreated: (album: Album) => void;

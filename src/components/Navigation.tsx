@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import Avatar from './Avatar.tsx'
-import { getUnreadCount, subscribeToNotifications } from '../lib/notifications.ts'
+import { useNotificationsStore } from '../stores/notificationsStore'
 import { getUserByUid } from '../lib/user'
 import type { User as AppUser } from '../types/user'
 
@@ -10,9 +10,9 @@ export default function Navigation() {
   const { user, signOut, loading } = useAuth()
   const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [notificationsCount, setNotificationsCount] = useState(0)
   const [appUser, setAppUser] = useState<AppUser | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const { unreadCount } = useNotificationsStore()
 
   // Ajouter un useEffect pour charger les données utilisateur
   useEffect(() => {
@@ -33,36 +33,6 @@ export default function Navigation() {
     return () => window.removeEventListener('profile-updated', handleProfileUpdate)
   }, [user])
 
-  useEffect(() => {
-    if (!user) return
-
-    // Charger le count initial
-    getUnreadCount(user.id).then(setNotificationsCount).catch((error) => {
-      console.error('Erreur lors du chargement du count:', error)
-    })
-
-    // Écouter les nouvelles notifications en temps réel
-    const unsubscribe = subscribeToNotifications(
-      user.id,
-      (notification) => {
-        console.log('🔔 NOTIFICATION REÇUE:', notification)
-        setNotificationsCount((prev) => {
-          console.log('📊 Count avant:', prev, '→ après:', prev + 1)
-          return prev + 1
-        })
-      },
-      (error) => console.error('❌ Erreur subscription:', error),
-    )
-
-    // Écouter l'event "notifications marquées comme lues"
-    const handleNotificationsRead = () => setNotificationsCount(0)
-    window.addEventListener('notifications-read', handleNotificationsRead)
-
-    return () => {
-      unsubscribe()
-      window.removeEventListener('notifications-read', handleNotificationsRead)
-    }
-  }, [user])
 
   // Fermer le dropdown en cliquant en dehors
   useEffect(() => {
@@ -129,9 +99,9 @@ export default function Navigation() {
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                 />
               </svg>
-              {notificationsCount > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                  {notificationsCount > 9 ? '9+' : notificationsCount}
+                  {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </Link>

@@ -1,4 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useAuth } from './hooks/useAuth'
+import { useNotificationsStore } from './stores/notificationsStore'
 import Layout from './components/Layout'
 import Home from './pages/Home.tsx'
 import Signup from './pages/Signup.tsx'
@@ -13,6 +16,20 @@ import Search from './pages/Search.tsx'
 import Settings from './pages/Settings.tsx'
 
 function App() {
+  const { user } = useAuth()
+  const { initialize, cleanup } = useNotificationsStore()
+
+  // Initialiser le store de notifications quand l'utilisateur se connecte
+  useEffect(() => {
+    if (user) {
+      initialize(user.id)
+    } else {
+      cleanup()
+    }
+
+    return () => cleanup()
+  }, [user, initialize, cleanup])
+
   return (
     <BrowserRouter>
       <Routes>

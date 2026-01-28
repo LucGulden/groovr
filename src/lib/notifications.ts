@@ -31,8 +31,17 @@ export async function getNotifications(
         vinyl:vinyl_id (
           id,
           title,
-          artist,
-          cover_url
+          cover_url,
+          vinyl_artists(
+            artist:artists(name)
+          ),
+          album:albums(
+            id,
+            title,
+            album_artists(
+              artist:artists(name)
+            )
+          )
         )
       ),
       comment:comment_id (
@@ -56,7 +65,30 @@ export async function getNotifications(
     throw error
   }
 
-  return (data || []) as NotificationWithDetails[]
+  // Transformer la structure pour reconstituer les champs artist
+  return (data || []).map((item: any) => {
+    // Si on a un post avec un vinyl
+    if (item.post?.vinyl) {
+      // Extraire les artistes du vinyl
+      const vinylArtists = item.post.vinyl.vinyl_artists?.map((va: any) => va.artist?.name).filter(Boolean) || []
+      
+      // Extraire les artistes de l'album
+      const albumArtists = item.post.vinyl.album?.album_artists?.map((aa: any) => aa.artist?.name).filter(Boolean) || []
+      
+      item.post.vinyl = {
+        ...item.post.vinyl,
+        artist: vinylArtists.join(', ') || albumArtists.join(', ') || 'Artiste inconnu',
+        vinyl_artists: undefined,
+        album: item.post.vinyl.album ? {
+          ...item.post.vinyl.album,
+          artist: albumArtists.join(', ') || 'Artiste inconnu',
+          album_artists: undefined,
+        } : undefined,
+      }
+    }
+
+    return item
+  }) as NotificationWithDetails[]
 }
 
 /**
@@ -78,21 +110,6 @@ export async function getUnreadCount(userId: string): Promise<number> {
 }
 
 /**
- * Marque une notification comme lue
- */
-export async function markAsRead(notificationId: string): Promise<void> {
-  const { error } = await supabase
-    .from('notifications')
-    .update({ read: true })
-    .eq('id', notificationId)
-
-  if (error) {
-    console.error('Error marking notification as read:', error)
-    throw error
-  }
-}
-
-/**
  * Marque toutes les notifications d'un utilisateur comme lues
  */
 export async function markAllAsRead(userId: string): Promise<void> {
@@ -104,21 +121,6 @@ export async function markAllAsRead(userId: string): Promise<void> {
 
   if (error) {
     console.error('Error marking all notifications as read:', error)
-    throw error
-  }
-}
-
-/**
- * Supprime une notification
- */
-export async function deleteNotification(notificationId: string): Promise<void> {
-  const { error } = await supabase
-    .from('notifications')
-    .delete()
-    .eq('id', notificationId)
-
-  if (error) {
-    console.error('Error deleting notification:', error)
     throw error
   }
 }
@@ -164,7 +166,7 @@ export function subscribeToNotifications(
   onError?: (error: Error) => void,
 ) {
   const channel = supabase
-    .channel(`notifications:${userId}`)
+    .channel(`notifs-${userId}-${Date.now()}`)
     .on(
       'postgres_changes',
       {
@@ -177,11 +179,17 @@ export function subscribeToNotifications(
         onNotification(payload.new as Notification)
       },
     )
-    .subscribe((status) => {
+    .subscribe((status, err) => {  // ← Ajouter le paramètre err
       if (status === 'SUBSCRIBED') {
-        console.log('Subscribed to notifications')
+        console.log('✅ Subscribed to notifications')
       } else if (status === 'CHANNEL_ERROR') {
-        onError?.(new Error('Error subscribing to notifications'))
+        console.error('❌ Channel error details:', err)  // ← Logger les détails
+        onError?.(new Error(`Error subscribing to notifications: ${err?.message || 'Unknown error'}`))
+      } else if (status === 'TIMED_OUT') {
+        console.error('❌ Subscription timed out')
+        onError?.(new Error('Subscription timed out'))
+      } else if (status === 'CLOSED') {
+        console.log('🔌 Channel closed')
       }
     })
 

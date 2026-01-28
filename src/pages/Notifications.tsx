@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 import { useNotifications } from '../hooks/useNotifications'
+import { useNotificationsStore } from '../stores/notificationsStore'
 import NotificationItem from '../components/NotificationItem'
 
 export default function Notifications() {
@@ -44,24 +45,30 @@ function NotificationsContent({ userId }: { userId: string }) {
     loading,
     loadingMore,
     hasMore,
-    unreadCount,
     loadMore,
     handleMarkAllAsRead,
   } = useNotifications(userId)
 
+  const { reset } = useNotificationsStore()
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
 
-  // Dire à Navigation qu'on est sur la page notifications
+  // Calculer le nombre de notifications non lues depuis les données locales
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  // Marquer toutes les notifications comme lues au montage
   useEffect(() => {
-    window.dispatchEvent(new Event('notifications-read'))
-    
-    // Marquer toutes les notifications comme lues
+    // Attendre que le chargement initial soit terminé
+    if (loading) return
+
+    // Reset le compteur dans le store (Navigation)
+    reset()
+
+    // Marquer en BDD seulement s'il y a des notifications non lues
     if (unreadCount > 0) {
       handleMarkAllAsRead()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Une seule fois au montage
+  }, [loading]) // Se déclenche quand loading passe à false
 
   // Infinite scroll avec Intersection Observer
   useEffect(() => {
