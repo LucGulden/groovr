@@ -60,5 +60,5 @@ export default function ModeChoice({ onSelectSpotify, onSelectManual, onCancel }
         </button>
       </div>
     </div>
-  );
+  )
 }

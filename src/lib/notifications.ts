@@ -1,9 +1,9 @@
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient'
 import type { 
   Notification, 
   NotificationWithDetails, 
-  CreateNotificationParams
-} from '../types/notification';
+  CreateNotificationParams,
+} from '../types/notification'
 
 /**
  * Récupère les notifications d'un utilisateur avec pagination
@@ -11,7 +11,7 @@ import type {
 export async function getNotifications(
   userId: string,
   limit: number = 20,
-  lastCreatedAt?: string
+  lastCreatedAt?: string,
 ): Promise<NotificationWithDetails[]> {
   let query = supabase
     .from('notifications')
@@ -42,21 +42,21 @@ export async function getNotifications(
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .limit(limit)
 
   // Pagination cursor-based
   if (lastCreatedAt) {
-    query = query.lt('created_at', lastCreatedAt);
+    query = query.lt('created_at', lastCreatedAt)
   }
 
-  const { data, error } = await query;
+  const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching notifications:', error);
-    throw error;
+    console.error('Error fetching notifications:', error)
+    throw error
   }
 
-  return (data || []) as NotificationWithDetails[];
+  return (data || []) as NotificationWithDetails[]
 }
 
 /**
@@ -67,14 +67,14 @@ export async function getUnreadCount(userId: string): Promise<number> {
     .from('notifications')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .eq('read', false);
+    .eq('read', false)
 
   if (error) {
-    console.error('Error counting unread notifications:', error);
-    throw error;
+    console.error('Error counting unread notifications:', error)
+    throw error
   }
 
-  return count || 0;
+  return count || 0
 }
 
 /**
@@ -84,11 +84,11 @@ export async function markAsRead(notificationId: string): Promise<void> {
   const { error } = await supabase
     .from('notifications')
     .update({ read: true })
-    .eq('id', notificationId);
+    .eq('id', notificationId)
 
   if (error) {
-    console.error('Error marking notification as read:', error);
-    throw error;
+    console.error('Error marking notification as read:', error)
+    throw error
   }
 }
 
@@ -100,11 +100,11 @@ export async function markAllAsRead(userId: string): Promise<void> {
     .from('notifications')
     .update({ read: true })
     .eq('user_id', userId)
-    .eq('read', false);
+    .eq('read', false)
 
   if (error) {
-    console.error('Error marking all notifications as read:', error);
-    throw error;
+    console.error('Error marking all notifications as read:', error)
+    throw error
   }
 }
 
@@ -115,11 +115,11 @@ export async function deleteNotification(notificationId: string): Promise<void> 
   const { error } = await supabase
     .from('notifications')
     .delete()
-    .eq('id', notificationId);
+    .eq('id', notificationId)
 
   if (error) {
-    console.error('Error deleting notification:', error);
-    throw error;
+    console.error('Error deleting notification:', error)
+    throw error
   }
 }
 
@@ -128,7 +128,7 @@ export async function deleteNotification(notificationId: string): Promise<void> 
  * Note: Principalement utilisé par les triggers SQL, mais peut être appelé manuellement
  */
 export async function createNotification(
-  params: CreateNotificationParams
+  params: CreateNotificationParams,
 ): Promise<Notification | null> {
   const { data, error } = await supabase
     .from('notifications')
@@ -140,19 +140,19 @@ export async function createNotification(
       comment_id: params.comment_id || null,
     })
     .select()
-    .single();
+    .single()
 
   if (error) {
     // Si c'est une erreur de contrainte unique (notification déjà existante), on ignore
     if (error.code === '23505') {
-      console.log('Notification already exists, skipping');
-      return null;
+      console.log('Notification already exists, skipping')
+      return null
     }
-    console.error('Error creating notification:', error);
-    throw error;
+    console.error('Error creating notification:', error)
+    throw error
   }
 
-  return data as Notification;
+  return data as Notification
 }
 
 /**
@@ -161,7 +161,7 @@ export async function createNotification(
 export function subscribeToNotifications(
   userId: string,
   onNotification: (notification: Notification) => void,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
 ) {
   const channel = supabase
     .channel(`notifications:${userId}`)
@@ -174,18 +174,18 @@ export function subscribeToNotifications(
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
-        onNotification(payload.new as Notification);
-      }
+        onNotification(payload.new as Notification)
+      },
     )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
-        console.log('Subscribed to notifications');
+        console.log('Subscribed to notifications')
       } else if (status === 'CHANNEL_ERROR') {
-        onError?.(new Error('Error subscribing to notifications'));
+        onError?.(new Error('Error subscribing to notifications'))
       }
-    });
+    })
 
   return () => {
-    channel.unsubscribe();
-  };
+    channel.unsubscribe()
+  }
 }

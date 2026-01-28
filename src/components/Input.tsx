@@ -40,5 +40,5 @@ export default function Input({
         <p className="mt-2 text-sm text-red-500">{error}</p>
       )}
     </div>
-  );
+  )
 }

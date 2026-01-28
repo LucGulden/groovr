@@ -1,16 +1,16 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Avatar from './Avatar';
-import Input from './Input';
-import Button from './Button';
-import { uploadProfilePhoto, generateImagePreview } from '../lib/storage';
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import Avatar from './Avatar'
+import Input from './Input'
+import Button from './Button'
+import { uploadProfilePhoto, generateImagePreview } from '../lib/storage'
 import {
   updateUserProfile,
   checkUsernameAvailability,
   validateUsername,
   validateBio,
-} from '../lib/user';
-import type { User } from '../types/user';
+} from '../lib/user'
+import type { User } from '../types/user'
 
 interface EditProfileFormProps {
   user: User;
@@ -25,112 +25,112 @@ interface FormData {
 }
 
 export default function EditProfileForm({ user, onSuccess }: EditProfileFormProps) {
-  const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState<FormData>({
     username: user.username,
     first_name: user.first_name || '',
     last_name: user.last_name || '',
     bio: user.bio || '',
-  });
+  })
 
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(user.photo_url || null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
-  const [checkingUsername, setCheckingUsername] = useState(false);
-  const [usernameAvailable, setUsernameAvailable] = useState(true);
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(user.photo_url || null)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [loading, setLoading] = useState(false)
+  const [checkingUsername, setCheckingUsername] = useState(false)
+  const [usernameAvailable, setUsernameAvailable] = useState(true)
 
   // Vérifier la disponibilité du username en temps réel
   useEffect(() => {
     const checkUsername = async () => {
       if (formData.username === user.username) {
-        setUsernameAvailable(true);
-        return;
+        setUsernameAvailable(true)
+        return
       }
 
       if (!validateUsername(formData.username)) {
-        setUsernameAvailable(false);
-        return;
+        setUsernameAvailable(false)
+        return
       }
 
-      setCheckingUsername(true);
+      setCheckingUsername(true)
       try {
-        const available = await checkUsernameAvailability(formData.username, user.uid);
-        setUsernameAvailable(available);
+        const available = await checkUsernameAvailability(formData.username, user.uid)
+        setUsernameAvailable(available)
       } catch (error) {
-        console.error('Erreur lors de la vérification du username:', error);
+        console.error('Erreur lors de la vérification du username:', error)
       } finally {
-        setCheckingUsername(false);
+        setCheckingUsername(false)
       }
-    };
+    }
 
-    const debounce = setTimeout(checkUsername, 500);
-    return () => clearTimeout(debounce);
-  }, [formData.username, user.username, user.uid]);
+    const debounce = setTimeout(checkUsername, 500)
+    return () => clearTimeout(debounce)
+  }, [formData.username, user.username, user.uid])
 
   // Gestion de la sélection de fichier
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const file = e.target.files?.[0]
+    if (!file) return
 
     // Valider le fichier
     if (!file.type.startsWith('image/')) {
-      setErrors({ ...errors, photo: 'Le fichier doit être une image' });
-      return;
+      setErrors({ ...errors, photo: 'Le fichier doit être une image' })
+      return
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setErrors({ ...errors, photo: "L'image ne doit pas dépasser 5MB" });
-      return;
+      setErrors({ ...errors, photo: "L'image ne doit pas dépasser 5MB" })
+      return
     }
 
     try {
-      const preview = await generateImagePreview(file);
-      setPhotoFile(file);
-      setPhotoPreview(preview);
-      setErrors({ ...errors, photo: '' });
+      const preview = await generateImagePreview(file)
+      setPhotoFile(file)
+      setPhotoPreview(preview)
+      setErrors({ ...errors, photo: '' })
     } catch {
-      setErrors({ ...errors, photo: "Erreur lors de la lecture de l'image" });
+      setErrors({ ...errors, photo: "Erreur lors de la lecture de l'image" })
     }
-  };
+  }
 
   // Validation du formulaire
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {}
 
     if (!formData.username) {
-      newErrors.username = "Le nom d'utilisateur est requis";
+      newErrors.username = "Le nom d'utilisateur est requis"
     } else if (!validateUsername(formData.username)) {
       newErrors.username =
-        "Nom d'utilisateur invalide (3-20 caractères, lettres, chiffres, - et _)";
+        "Nom d'utilisateur invalide (3-20 caractères, lettres, chiffres, - et _)"
     } else if (!usernameAvailable) {
-      newErrors.username = "Ce nom d'utilisateur est déjà pris";
+      newErrors.username = "Ce nom d'utilisateur est déjà pris"
     }
 
     if (formData.bio && !validateBio(formData.bio)) {
-      newErrors.bio = 'La bio ne peut pas dépasser 200 caractères';
+      newErrors.bio = 'La bio ne peut pas dépasser 200 caractères'
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   // Soumission du formulaire
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
-    if (!validateForm()) return;
+    if (!validateForm()) return
 
     try {
-      setLoading(true);
+      setLoading(true)
 
-      let photo_url = user.photo_url;
+      let photo_url = user.photo_url
 
       // Upload de la nouvelle photo si sélectionnée
       if (photoFile) {
-        photo_url = await uploadProfilePhoto(user.uid, photoFile);
+        photo_url = await uploadProfilePhoto(user.uid, photoFile)
       }
 
       // Mise à jour du profil
@@ -140,41 +140,41 @@ export default function EditProfileForm({ user, onSuccess }: EditProfileFormProp
         last_name: formData.last_name || undefined,
         bio: formData.bio || undefined,
         photo_url: photo_url || undefined,
-      });
+      })
 
       window.dispatchEvent(new Event('profile-updated'))
 
       // Callback de succès
       if (onSuccess) {
-        onSuccess();
+        onSuccess()
       } else {
-        navigate(`/profile/${formData.username}`);
+        navigate(`/profile/${formData.username}`)
       }
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du profil:', error);
+      console.error('Erreur lors de la mise à jour du profil:', error)
       setErrors({
         submit:
           error instanceof Error ? error.message : 'Erreur lors de la mise à jour du profil',
-      });
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // Gestion des changements de champs
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
 
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }));
+    }))
 
     // Effacer l'erreur du champ modifié
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: '' }))
     }
-  };
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -290,5 +290,5 @@ export default function EditProfileForm({ user, onSuccess }: EditProfileFormProp
         Enregistrer les modifications
       </Button>
     </form>
-  );
+  )
 }

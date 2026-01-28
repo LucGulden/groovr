@@ -48,7 +48,7 @@ export async function getFollowStats(userId: string): Promise<{
  */
 export async function followUser(
   followerId: string,
-  followingId: string
+  followingId: string,
 ): Promise<void> {
   const { error } = await supabase.from('follows').insert({
     follower_id: followerId,
@@ -69,7 +69,7 @@ export async function followUser(
  */
 export async function unfollowUser(
   followerId: string,
-  followingId: string
+  followingId: string,
 ): Promise<void> {
   const { error } = await supabase
     .from('follows')
@@ -91,7 +91,7 @@ export async function unfollowUser(
  */
 export async function isFollowing(
   followerId: string,
-  followingId: string
+  followingId: string,
 ): Promise<boolean> {
   const { data, error } = await supabase
     .from('follows')

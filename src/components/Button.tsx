@@ -15,19 +15,19 @@ export default function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const baseStyles = 'rounded-lg font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50';
+  const baseStyles = 'rounded-lg font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50'
 
   const sizeStyles = {
     sm: 'px-4 py-2 text-sm',
     md: 'px-6 py-3',
     lg: 'px-8 py-4 text-lg',
-  };
+  }
 
   const variantStyles = {
     primary: 'bg-[var(--primary)] text-white hover:bg-[#d67118] active:scale-95',
     secondary: 'bg-[var(--secondary)] text-white hover:bg-[#723a0f] active:scale-95',
     outline: 'border-2 border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white active:scale-95',
-  };
+  }
 
   return (
     <button
@@ -68,5 +68,5 @@ export default function Button({
         )}
       </span>
     </button>
-  );
+  )
 }

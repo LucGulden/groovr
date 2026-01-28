@@ -52,7 +52,7 @@ export default function PostCard({ post, currentUserId, onDelete, priority = fal
       },
       (error: Error) => {
         console.error('Erreur lors de la récupération des commentaires:', error)
-      }
+      },
     )
 
     return () => unsubscribe()
@@ -173,7 +173,7 @@ export default function PostCard({ post, currentUserId, onDelete, priority = fal
             onClick={handleDeletePost}
             disabled={isDeleting}
             className="flex-shrink-0 text-[var(--foreground-muted)] hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title={isDeleting ? "Suppression en cours..." : "Supprimer le post"}
+            title={isDeleting ? 'Suppression en cours...' : 'Supprimer le post'}
           >
             {isDeleting ? (
               <svg className="h-5 w-5 animate-spin text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

@@ -79,7 +79,7 @@ export async function getFeedPosts(
   userId: string,
   profileFeed: boolean,
   limit: number,
-  lastPost?: PostWithDetails
+  lastPost?: PostWithDetails,
 ): Promise<PostWithDetails[]> {
   try {
     let query = supabase
@@ -192,12 +192,12 @@ export async function getFeedPosts(
     // Transformer les données en PostWithDetails
     const posts: PostWithDetails[] = data.map((post: any) => {
       // Extraire les artistes du vinyle
-      const vinylArtists = post.vinyl?.vinyl_artists?.map((va: any) => va.artist?.name).filter(Boolean) || [];
-      const vinylArtist = vinylArtists.join(', ') || 'Artiste inconnu';
+      const vinylArtists = post.vinyl?.vinyl_artists?.map((va: any) => va.artist?.name).filter(Boolean) || []
+      const vinylArtist = vinylArtists.join(', ') || 'Artiste inconnu'
       
       // Extraire les artistes de l'album
-      const albumArtists = post.vinyl?.album?.album_artists?.map((aa: any) => aa.artist?.name).filter(Boolean) || [];
-      const albumArtist = albumArtists.join(', ') || vinylArtist;
+      const albumArtists = post.vinyl?.album?.album_artists?.map((aa: any) => aa.artist?.name).filter(Boolean) || []
+      const albumArtist = albumArtists.join(', ') || vinylArtist
 
       // Récupérer les infos de l'album (depuis le vinyle ou l'album lié)
       const albumInfo = post.vinyl?.album || {

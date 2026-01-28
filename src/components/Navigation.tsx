@@ -51,7 +51,7 @@ export default function Navigation() {
           return prev + 1
         })
       },
-      (error) => console.error('❌ Erreur subscription:', error)
+      (error) => console.error('❌ Erreur subscription:', error),
     )
 
     // Écouter l'event "notifications marquées comme lues"
@@ -142,7 +142,7 @@ export default function Navigation() {
         <div className="flex items-center gap-4">
           {loading ? (
             // Spinner pendant le chargement
-            <div className="h-8 w-8 animate-pulse rounded-full bg-[var(--background-lighter)]"></div>
+            <div className="h-8 w-8 animate-pulse rounded-full bg-[var(--background-lighter)]" />
           ) : user ? (
             // Utilisateur connecté - Avatar avec dropdown
             <div className="relative" ref={dropdownRef}>
@@ -207,7 +207,7 @@ export default function Navigation() {
                     Paramètres
                   </Link>
 
-                  <div className="my-1 h-px bg-[var(--background-lighter)]"></div>
+                  <div className="my-1 h-px bg-[var(--background-lighter)]" />
 
                   <button
                     onClick={handleSignOut}

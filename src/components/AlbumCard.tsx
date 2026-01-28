@@ -1,5 +1,5 @@
-import VinylImage from './VinylImage';
-import type { Album } from '../types/vinyl';
+import VinylImage from './VinylImage'
+import type { Album } from '../types/vinyl'
 
 interface AlbumCardProps {
   album: Album;
@@ -29,5 +29,5 @@ export default function AlbumCard({ album, onClick }: AlbumCardProps) {
         <p className="text-xs text-[var(--foreground-muted)]">{album.year}</p>
       )}
     </button>
-  );
+  )
 }

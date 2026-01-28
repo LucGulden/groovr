@@ -149,7 +149,7 @@ export function useFeedPagination(userId: string, profileFeed: boolean): UseFeed
               setNewPostsAvailable((prev) => prev + 1)
             }
           }
-        }
+        },
       )
       .subscribe()
 

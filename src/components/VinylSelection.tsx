@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { getVinylsByAlbum, hasVinyl } from '../lib/vinyls';
-import type { Album, Vinyl } from '../types/vinyl';
-import VinylImage from './VinylImage';
-import VinylCard from './VinylCard';
+import { useState, useEffect } from 'react'
+import { getVinylsByAlbum, hasVinyl } from '../lib/vinyls'
+import type { Album, Vinyl } from '../types/vinyl'
+import VinylImage from './VinylImage'
+import VinylCard from './VinylCard'
 
 interface VinylSelectionProps {
   album: Album;
@@ -17,49 +17,49 @@ interface VinylStatus {
 }
 
 export default function VinylSelection({ album, userId, onVinylSelect, onCreateVinyl }: VinylSelectionProps) {
-  const [vinyls, setVinyls] = useState<Vinyl[]>([]);
-  const [statuses, setStatuses] = useState<Map<string, VinylStatus>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [vinyls, setVinyls] = useState<Vinyl[]>([])
+  const [statuses, setStatuses] = useState<Map<string, VinylStatus>>(new Map())
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const loadVinyls = async () => {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
 
       try {
-        const vinylResults = await getVinylsByAlbum(album.id);
-        setVinyls(vinylResults);
+        const vinylResults = await getVinylsByAlbum(album.id)
+        setVinyls(vinylResults)
 
         // Vérifier le statut de chaque vinyle
-        const statusMap = new Map<string, VinylStatus>();
+        const statusMap = new Map<string, VinylStatus>()
         await Promise.all(
           vinylResults.map(async (vinyl) => {
             try {
               const [inCol, inWish] = await Promise.all([
                 hasVinyl(userId, vinyl.id, 'collection'),
                 hasVinyl(userId, vinyl.id, 'wishlist'),
-              ]);
+              ])
               statusMap.set(vinyl.id, {
                 inCollection: inCol,
                 inWishlist: inWish,
-              });
+              })
             } catch (err) {
-              console.error('Erreur statut:', err);
+              console.error('Erreur statut:', err)
             }
-          })
-        );
-        setStatuses(statusMap);
+          }),
+        )
+        setStatuses(statusMap)
       } catch (err) {
-        console.error('Erreur chargement vinyles:', err);
-        setError('Erreur lors du chargement des pressages');
+        console.error('Erreur chargement vinyles:', err)
+        setError('Erreur lors du chargement des pressages')
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    loadVinyls();
-  }, [album.id, userId]);
+    loadVinyls()
+  }, [album.id, userId])
 
   return (
     <div className="w-full">
@@ -110,8 +110,8 @@ export default function VinylSelection({ album, userId, onVinylSelect, onCreateV
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="animate-pulse rounded-lg border border-[var(--background-lighter)] bg-[var(--background-lighter)] p-4">
-              <div className="h-6 w-3/4 rounded bg-[var(--background)]"></div>
-              <div className="mt-2 h-4 w-1/2 rounded bg-[var(--background)]"></div>
+              <div className="h-6 w-3/4 rounded bg-[var(--background)]" />
+              <div className="mt-2 h-4 w-1/2 rounded bg-[var(--background)]" />
             </div>
           ))}
         </div>
@@ -138,7 +138,7 @@ export default function VinylSelection({ album, userId, onVinylSelect, onCreateV
           </p>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {vinyls.map((vinyl) => {
-              const status = statuses.get(vinyl.id);
+              const status = statuses.get(vinyl.id)
 
               return (
                 <VinylCard
@@ -149,11 +149,11 @@ export default function VinylSelection({ album, userId, onVinylSelect, onCreateV
                   inWishlist={status?.inWishlist}
                   onClick={() => onVinylSelect(vinyl)}
                 />
-              );
+              )
             })}
           </div>
         </>
       )}
     </div>
-  );
+  )
 }

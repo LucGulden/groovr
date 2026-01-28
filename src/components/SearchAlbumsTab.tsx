@@ -1,55 +1,55 @@
-import { useState, useEffect } from 'react';
-import { searchAlbums } from '../lib/vinyls';
-import { useAuth } from '../hooks/useAuth';
-import AlbumCard from './AlbumCard';
-import AddVinylModal from './AddVinylModal';
-import type { Album } from '../types/vinyl';
+import { useState, useEffect } from 'react'
+import { searchAlbums } from '../lib/vinyls'
+import { useAuth } from '../hooks/useAuth'
+import AlbumCard from './AlbumCard'
+import AddVinylModal from './AddVinylModal'
+import type { Album } from '../types/vinyl'
 
 interface SearchAlbumsTabProps {
   query: string;
 }
 
 export default function SearchAlbumsTab({ query }: SearchAlbumsTabProps) {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [searchResults, setSearchResults] = useState<Album[]>([]);
-  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCreateMode, setIsCreateMode] = useState(false);
+  const { user } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+  const [searchResults, setSearchResults] = useState<Album[]>([])
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isCreateMode, setIsCreateMode] = useState(false)
 
-  const hasSearched = query.trim().length > 0;
+  const hasSearched = query.trim().length > 0
 
   // Debounce search
   useEffect(() => {
     if (!query || query.trim().length < 2) {
-      setSearchResults([]);
-      return;
+      setSearchResults([])
+      return
     }
 
     const timer = setTimeout(async () => {
-      setIsLoading(true);
-      setError(null);
+      setIsLoading(true)
+      setError(null)
 
       try {
-        const results = await searchAlbums(query);
-        setSearchResults(results);
+        const results = await searchAlbums(query)
+        setSearchResults(results)
       } catch (err) {
-        console.error('[SearchAlbumsTab] Erreur lors de la recherche:', err);
-        setError(err instanceof Error ? err : new Error('Erreur lors de la recherche'));
+        console.error('[SearchAlbumsTab] Erreur lors de la recherche:', err)
+        setError(err instanceof Error ? err : new Error('Erreur lors de la recherche'))
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    }, 300);
+    }, 300)
 
-    return () => clearTimeout(timer);
-  }, [query]);
+    return () => clearTimeout(timer)
+  }, [query])
 
   const handleAlbumClick = (album: Album) => {
-    setSelectedAlbum(album);
-    setIsCreateMode(false);
-    setIsModalOpen(true);
-  };
+    setSelectedAlbum(album)
+    setIsCreateMode(false)
+    setIsModalOpen(true)
+  }
 
   return (
     <div className="w-full">
@@ -72,9 +72,9 @@ export default function SearchAlbumsTab({ query }: SearchAlbumsTabProps) {
       {/* Bouton créer un album */}
       <button
         onClick={() => {
-          setSelectedAlbum(null);
-          setIsCreateMode(true);
-          setIsModalOpen(true);
+          setSelectedAlbum(null)
+          setIsCreateMode(true)
+          setIsModalOpen(true)
         }}
         className="mb-6 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--background-lighter)] py-3 text-[var(--foreground-muted)] transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
       >
@@ -89,9 +89,9 @@ export default function SearchAlbumsTab({ query }: SearchAlbumsTabProps) {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="animate-pulse">
-              <div className="aspect-square w-full rounded-lg bg-[var(--background-lighter)]"></div>
-              <div className="mt-3 h-4 rounded bg-[var(--background-lighter)]"></div>
-              <div className="mt-2 h-3 w-2/3 rounded bg-[var(--background-lighter)]"></div>
+              <div className="aspect-square w-full rounded-lg bg-[var(--background-lighter)]" />
+              <div className="mt-3 h-4 rounded bg-[var(--background-lighter)]" />
+              <div className="mt-2 h-3 w-2/3 rounded bg-[var(--background-lighter)]" />
             </div>
           ))}
         </div>
@@ -144,12 +144,12 @@ export default function SearchAlbumsTab({ query }: SearchAlbumsTabProps) {
           key={isModalOpen ? 'modal-open' : 'modal-closed'}
           isOpen={isModalOpen}
           onClose={() => {
-            setIsModalOpen(false);
-            setIsCreateMode(false);
+            setIsModalOpen(false)
+            setIsCreateMode(false)
           }}
           onSuccess={() => {
-            setIsModalOpen(false);
-            setIsCreateMode(false);
+            setIsModalOpen(false)
+            setIsCreateMode(false)
           }}
           userId={user.id}
           initialAlbum={selectedAlbum ?? undefined}
@@ -157,5 +157,5 @@ export default function SearchAlbumsTab({ query }: SearchAlbumsTabProps) {
         />
       )}
     </div>
-  );
+  )
 }

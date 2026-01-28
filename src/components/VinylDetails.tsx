@@ -1,10 +1,10 @@
 // src/components/VinylDetails.tsx
 
-import { useState, useEffect } from 'react';
-import { hasVinyl, moveToCollection, removeVinylFromUser } from '../lib/vinyls';
-import type { Album, Vinyl, UserVinylType } from '../types/vinyl';
-import VinylImage from './VinylImage';
-import Button from './Button';
+import { useState, useEffect } from 'react'
+import { hasVinyl, moveToCollection, removeVinylFromUser } from '../lib/vinyls'
+import type { Album, Vinyl, UserVinylType } from '../types/vinyl'
+import VinylImage from './VinylImage'
+import Button from './Button'
 
 interface VinylDetailsProps {
   vinyl: Vinyl;
@@ -25,78 +25,78 @@ export default function VinylDetails({
   isOwnProfile = false,
   onActionComplete,
 }: VinylDetailsProps) {
-  const [inCollection, setInCollection] = useState(false);
-  const [inWishlist, setInWishlist] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [isMoving, setIsMoving] = useState(false);
-  const [isRemoving, setIsRemoving] = useState(false);
+  const [inCollection, setInCollection] = useState(false)
+  const [inWishlist, setInWishlist] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [isMoving, setIsMoving] = useState(false)
+  const [isRemoving, setIsRemoving] = useState(false)
 
-  const isReissue = album.year !== vinyl.year;
+  const isReissue = album.year !== vinyl.year
 
   useEffect(() => {
-    let isMounted = true;
+    let isMounted = true
 
     const checkStatus = async () => {
       try {
         const [inCol, inWish] = await Promise.all([
           hasVinyl(userId, vinyl.id, 'collection'),
           hasVinyl(userId, vinyl.id, 'wishlist'),
-        ]);
+        ])
 
         if (isMounted) {
-          setInCollection(inCol);
-          setInWishlist(inWish);
-          setLoading(false);
+          setInCollection(inCol)
+          setInWishlist(inWish)
+          setLoading(false)
         }
       } catch (err) {
-        console.error('Erreur vérification statut:', err);
+        console.error('Erreur vérification statut:', err)
         if (isMounted) {
-          setLoading(false);
+          setLoading(false)
         }
       }
-    };
+    }
 
-    checkStatus();
+    checkStatus()
 
     return () => {
-      isMounted = false;
-    };
-  }, [userId, vinyl.id]);
+      isMounted = false
+    }
+  }, [userId, vinyl.id])
 
   const handleMoveToCollection = async () => {
     try {
-      setIsMoving(true);
-      await moveToCollection(userId, vinyl.id);
-      setInWishlist(false);
-      setInCollection(true);
-      window.dispatchEvent(new Event('vinyl-added'));
-      onActionComplete?.();  // Ajouter cette ligne
+      setIsMoving(true)
+      await moveToCollection(userId, vinyl.id)
+      setInWishlist(false)
+      setInCollection(true)
+      window.dispatchEvent(new Event('vinyl-added'))
+      onActionComplete?.()  // Ajouter cette ligne
     } catch (err) {
-      console.error('Erreur déplacement:', err);
-      alert('Erreur lors du déplacement vers la collection');
+      console.error('Erreur déplacement:', err)
+      alert('Erreur lors du déplacement vers la collection')
     } finally {
-      setIsMoving(false);
+      setIsMoving(false)
     }
-  };
+  }
 
   const handleRemove = async (type: UserVinylType) => {
     try {
-      setIsRemoving(true);
-      await removeVinylFromUser(userId, vinyl.id, type);
+      setIsRemoving(true)
+      await removeVinylFromUser(userId, vinyl.id, type)
       if (type === 'collection') {
-        setInCollection(false);
+        setInCollection(false)
       } else {
-        setInWishlist(false);
+        setInWishlist(false)
       }
-      window.dispatchEvent(new Event('vinyl-added'));
-      onActionComplete?.();  // Ajouter cette ligne
+      window.dispatchEvent(new Event('vinyl-added'))
+      onActionComplete?.()  // Ajouter cette ligne
     } catch (err) {
-      console.error('Erreur suppression:', err);
-      alert('Erreur lors de la suppression');
+      console.error('Erreur suppression:', err)
+      alert('Erreur lors de la suppression')
     } finally {
-      setIsRemoving(false);
+      setIsRemoving(false)
     }
-  };
+  }
 
   // Déterminer quels boutons afficher selon le contexte
   const renderActions = () => {
@@ -128,7 +128,7 @@ export default function VinylDetails({
             )}
           </Button>
         </div>
-      );
+      )
     }
 
     // CONTEXTE 2 : Mon profil > Wishlist
@@ -182,7 +182,7 @@ export default function VinylDetails({
             )}
           </Button>
         </div>
-      );
+      )
     }
 
     // CONTEXTE 3 : Profil d'un autre OU Search (comportement d'ajout classique)
@@ -191,7 +191,7 @@ export default function VinylDetails({
         <p className="text-center text-sm text-[var(--foreground-muted)]">
           Ce pressage est déjà dans votre collection
         </p>
-      );
+      )
     }
 
     if (inWishlist) {
@@ -226,7 +226,7 @@ export default function VinylDetails({
             </Button>
           </div>
         </div>
-      );
+      )
     }
 
     // Ni collection ni wishlist → 2 boutons
@@ -247,8 +247,8 @@ export default function VinylDetails({
           Ajouter à ma wishlist
         </Button>
       </div>
-    );
-  };
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -342,7 +342,7 @@ export default function VinylDetails({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 // Helper component
@@ -352,5 +352,5 @@ function DetailRow({ label, value }: { label: string; value: string | number }) 
       <span className="text-sm text-[var(--foreground-muted)]">{label}</span>
       <span className="text-sm font-medium text-[var(--foreground)] text-right">{value}</span>
     </div>
-  );
+  )
 }

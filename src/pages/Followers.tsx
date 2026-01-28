@@ -1,23 +1,23 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
-import { getFollowers } from '../lib/follows';
-import UserListItem from '../components/UserListItem';
-import { type User } from '../types/user';
+import { useState, useEffect } from 'react'
+import { useParams, Link, Navigate } from 'react-router-dom'
+import { supabase } from '../supabaseClient'
+import { getFollowers } from '../lib/follows'
+import UserListItem from '../components/UserListItem'
+import { type User } from '../types/user'
 
 export default function Followers() {
-  const { username } = useParams<{ username: string }>();
-  const [profileUser, setProfileUser] = useState<User | null>(null);
-  const [followers, setFollowers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const { username } = useParams<{ username: string }>()
+  const [profileUser, setProfileUser] = useState<User | null>(null)
+  const [followers, setFollowers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
 
   // Charger le profil utilisateur
   useEffect(() => {
     const fetchProfile = async () => {
       if (!username) {
-        setNotFound(true);
-        return;
+        setNotFound(true)
+        return
       }
 
       try {
@@ -25,69 +25,69 @@ export default function Followers() {
           .from('users')
           .select('*')
           .eq('username', username)
-          .single();
+          .single()
 
         if (error || !data) {
-          setNotFound(true);
-          return;
+          setNotFound(true)
+          return
         }
 
-        setProfileUser(data);
+        setProfileUser(data)
       } catch (error) {
-        console.error('Erreur lors du chargement du profil:', error);
-        setNotFound(true);
+        console.error('Erreur lors du chargement du profil:', error)
+        setNotFound(true)
       }
-    };
+    }
 
-    fetchProfile();
-  }, [username]);
+    fetchProfile()
+  }, [username])
 
   // Charger la liste des abonnés
   useEffect(() => {
     const loadFollowers = async () => {
-      if (!profileUser) return;
+      if (!profileUser) return
 
       try {
-        setLoading(true);
-        const data = await getFollowers(profileUser.uid);
-        setFollowers(data);
+        setLoading(true)
+        const data = await getFollowers(profileUser.uid)
+        setFollowers(data)
       } catch (error) {
-        console.error('Erreur lors du chargement des abonnés:', error);
+        console.error('Erreur lors du chargement des abonnés:', error)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
     if (profileUser) {
-      loadFollowers();
+      loadFollowers()
     }
-  }, [profileUser]);
+  }, [profileUser])
 
   // Rafraîchir la liste après un follow/unfollow
   const handleFollowChange = async () => {
-    if (!profileUser) return;
+    if (!profileUser) return
     try {
-      const data = await getFollowers(profileUser.uid);
-      setFollowers(data);
+      const data = await getFollowers(profileUser.uid)
+      setFollowers(data)
     } catch (error) {
-      console.error('Erreur lors du rafraîchissement:', error);
+      console.error('Erreur lors du rafraîchissement:', error)
     }
-  };
+  }
 
   if (notFound) {
-    return <Navigate to="/404" replace />;
+    return <Navigate to="/404" replace />
   }
 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[var(--primary)] border-t-transparent"></div>
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[var(--primary)] border-t-transparent" />
       </div>
-    );
+    )
   }
 
   if (!profileUser) {
-    return null;
+    return null
   }
 
   return (
@@ -137,5 +137,5 @@ export default function Followers() {
         )}
       </div>
     </div>
-  );
+  )
 }

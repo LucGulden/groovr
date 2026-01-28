@@ -1,7 +1,7 @@
-import { useRef, useEffect } from 'react';
-import VinylCard from './VinylCard';
-import Button from './Button';
-import type { UserVinylType, UserVinylWithDetails, Vinyl, Album } from '../types/vinyl';
+import { useRef, useEffect } from 'react'
+import VinylCard from './VinylCard'
+import Button from './Button'
+import type { UserVinylType, UserVinylWithDetails, Vinyl, Album } from '../types/vinyl'
 
 interface VinylGridProps {
   vinyls: UserVinylWithDetails[];
@@ -31,25 +31,25 @@ export default function VinylGrid({
   emptyIcon = '💿',
   type,
 }: VinylGridProps) {
-  const observerTarget = useRef<HTMLDivElement>(null);
+  const observerTarget = useRef<HTMLDivElement>(null)
 
   // Intersection Observer pour infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          onLoadMore();
+          onLoadMore()
         }
       },
-      { threshold: 1.0 }
-    );
+      { threshold: 1.0 },
+    )
 
     if (observerTarget.current) {
-      observer.observe(observerTarget.current);
+      observer.observe(observerTarget.current)
     }
 
-    return () => observer.disconnect();
-  }, [hasMore, loadingMore, onLoadMore]);
+    return () => observer.disconnect()
+  }, [hasMore, loadingMore, onLoadMore])
 
   // Loading skeleton
   if (loading) {
@@ -62,7 +62,7 @@ export default function VinylGrid({
           />
         ))}
       </div>
-    );
+    )
   }
 
   // Message d'erreur
@@ -78,7 +78,7 @@ export default function VinylGrid({
           Réessayer
         </Button>
       </div>
-    );
+    )
   }
 
   // Empty state
@@ -96,7 +96,7 @@ export default function VinylGrid({
         </p>
         <div className="text-6xl opacity-20">🎵 🎶 🎸</div>
       </div>
-    );
+    )
   }
 
   // Grille de vinyles
@@ -154,5 +154,5 @@ export default function VinylGrid({
         </div>
       )}
     </>
-  );
+  )
 }

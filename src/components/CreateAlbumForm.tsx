@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import type { Album } from '../types/vinyl';
-import SpotifyAlbumImport from './SpotifyAlbumImport.tsx';
-import ManualAlbumForm from './ManualAlbumForm.tsx';
-import ModeChoice from './ModeChoice.tsx';
+import { useState } from 'react'
+import type { Album } from '../types/vinyl'
+import SpotifyAlbumImport from './SpotifyAlbumImport.tsx'
+import ManualAlbumForm from './ManualAlbumForm.tsx'
+import ModeChoice from './ModeChoice.tsx'
 
 interface CreateAlbumFormProps {
   onAlbumCreated: (album: Album) => void;
@@ -13,7 +13,7 @@ interface CreateAlbumFormProps {
 type FormMode = 'choice' | 'spotify' | 'manual';
 
 export default function CreateAlbumForm({ onAlbumCreated, onCancel, userId }: CreateAlbumFormProps) {
-  const [mode, setMode] = useState<FormMode>('choice');
+  const [mode, setMode] = useState<FormMode>('choice')
 
   return (
     <div className="w-full">
@@ -41,5 +41,5 @@ export default function CreateAlbumForm({ onAlbumCreated, onCancel, userId }: Cr
         />
       )}
     </div>
-  );
+  )
 }

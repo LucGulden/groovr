@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import SearchAlbumsTab from '../components/SearchAlbumsTab';
-import SearchArtistsTab from '../components/SearchArtistsTab';
-import SearchUsersTab from '../components/SearchUsersTab';
+import { useState } from 'react'
+import SearchAlbumsTab from '../components/SearchAlbumsTab'
+import SearchArtistsTab from '../components/SearchArtistsTab'
+import SearchUsersTab from '../components/SearchUsersTab'
 
 type SearchTab = 'albums' | 'artists' | 'users';
 
 export default function Search() {
-  const [activeTab, setActiveTab] = useState<SearchTab>('albums');
-  const [query, setQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<SearchTab>('albums')
+  const [query, setQuery] = useState('')
 
   return (
     <div className="min-h-screen bg-[var(--background)] px-6 py-8 sm:px-8">
@@ -64,7 +64,7 @@ export default function Search() {
             >
               Albums
               {activeTab === 'albums' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)]"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)]" />
               )}
             </button>
             <button
@@ -77,7 +77,7 @@ export default function Search() {
             >
               Artistes
               {activeTab === 'artists' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)]"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)]" />
               )}
             </button>
             <button
@@ -90,7 +90,7 @@ export default function Search() {
             >
               Utilisateurs
               {activeTab === 'users' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)]"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)]" />
               )}
             </button>
           </div>
@@ -102,5 +102,5 @@ export default function Search() {
         {activeTab === 'users' && <SearchUsersTab query={query} />}
       </div>
     </div>
-  );
+  )
 }

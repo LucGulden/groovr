@@ -1,9 +1,9 @@
-import imageCompression from 'browser-image-compression';
-import { supabase } from '../supabaseClient';
+import imageCompression from 'browser-image-compression'
+import { supabase } from '../supabaseClient'
 
-const COVERS_BUCKET = 'covers';
-const MAX_SIZE_PX = 600;
-const MAX_SIZE_MB = 0.5;
+const COVERS_BUCKET = 'covers'
+const MAX_SIZE_PX = 600
+const MAX_SIZE_MB = 0.5
 
 /**
  * Compresse et redimensionne une image pour les covers
@@ -14,13 +14,13 @@ async function compressImage(file: File): Promise<File> {
     maxWidthOrHeight: MAX_SIZE_PX,
     useWebWorker: true,
     fileType: 'image/webp' as const,
-  };
+  }
 
   try {
-    return await imageCompression(file, options);
+    return await imageCompression(file, options)
   } catch (error) {
-    console.error('Erreur lors de la compression:', error);
-    throw new Error('Impossible de compresser l\'image');
+    console.error('Erreur lors de la compression:', error)
+    throw new Error('Impossible de compresser l\'image')
   }
 }
 
@@ -29,14 +29,14 @@ async function compressImage(file: File): Promise<File> {
  * Utilisé pour copier les covers Spotify dans notre storage
  */
 async function fetchImageAsFile(imageUrl: string, filename: string): Promise<File> {
-  const response = await fetch(imageUrl);
+  const response = await fetch(imageUrl)
   
   if (!response.ok) {
-    throw new Error('Impossible de télécharger l\'image');
+    throw new Error('Impossible de télécharger l\'image')
   }
 
-  const blob = await response.blob();
-  return new File([blob], filename, { type: blob.type });
+  const blob = await response.blob()
+  return new File([blob], filename, { type: blob.type })
 }
 
 /**
@@ -47,16 +47,16 @@ async function fetchImageAsFile(imageUrl: string, filename: string): Promise<Fil
  */
 export async function uploadAlbumCover(albumId: string, file: File): Promise<string> {
   if (!file.type.startsWith('image/')) {
-    throw new Error('Le fichier doit être une image');
+    throw new Error('Le fichier doit être une image')
   }
 
   if (file.size > 10 * 1024 * 1024) {
-    throw new Error('L\'image ne doit pas dépasser 10MB');
+    throw new Error('L\'image ne doit pas dépasser 10MB')
   }
 
   try {
-    const compressedFile = await compressImage(file);
-    const filePath = `albums/${albumId}.webp`;
+    const compressedFile = await compressImage(file)
+    const filePath = `albums/${albumId}.webp`
 
     const { error: uploadError } = await supabase.storage
       .from(COVERS_BUCKET)
@@ -64,21 +64,21 @@ export async function uploadAlbumCover(albumId: string, file: File): Promise<str
         cacheControl: '31536000', // 1 an de cache
         upsert: true,
         contentType: 'image/webp',
-      });
+      })
 
     if (uploadError) {
-      console.error('Erreur upload cover album:', uploadError);
-      throw new Error('Impossible d\'uploader la cover');
+      console.error('Erreur upload cover album:', uploadError)
+      throw new Error('Impossible d\'uploader la cover')
     }
 
     const { data: urlData } = supabase.storage
       .from(COVERS_BUCKET)
-      .getPublicUrl(filePath);
+      .getPublicUrl(filePath)
 
-    return urlData.publicUrl;
+    return urlData.publicUrl
   } catch (error) {
-    if (error instanceof Error) throw error;
-    throw new Error('Erreur lors de l\'upload de la cover');
+    if (error instanceof Error) throw error
+    throw new Error('Erreur lors de l\'upload de la cover')
   }
 }
 
@@ -90,16 +90,16 @@ export async function uploadAlbumCover(albumId: string, file: File): Promise<str
  */
 export async function uploadVinylCover(vinylId: string, file: File): Promise<string> {
   if (!file.type.startsWith('image/')) {
-    throw new Error('Le fichier doit être une image');
+    throw new Error('Le fichier doit être une image')
   }
 
   if (file.size > 10 * 1024 * 1024) {
-    throw new Error('L\'image ne doit pas dépasser 10MB');
+    throw new Error('L\'image ne doit pas dépasser 10MB')
   }
 
   try {
-    const compressedFile = await compressImage(file);
-    const filePath = `vinyls/${vinylId}.webp`;
+    const compressedFile = await compressImage(file)
+    const filePath = `vinyls/${vinylId}.webp`
 
     const { error: uploadError } = await supabase.storage
       .from(COVERS_BUCKET)
@@ -107,21 +107,21 @@ export async function uploadVinylCover(vinylId: string, file: File): Promise<str
         cacheControl: '31536000',
         upsert: true,
         contentType: 'image/webp',
-      });
+      })
 
     if (uploadError) {
-      console.error('Erreur upload cover vinyl:', uploadError);
-      throw new Error('Impossible d\'uploader la cover');
+      console.error('Erreur upload cover vinyl:', uploadError)
+      throw new Error('Impossible d\'uploader la cover')
     }
 
     const { data: urlData } = supabase.storage
       .from(COVERS_BUCKET)
-      .getPublicUrl(filePath);
+      .getPublicUrl(filePath)
 
-    return urlData.publicUrl;
+    return urlData.publicUrl
   } catch (error) {
-    if (error instanceof Error) throw error;
-    throw new Error('Erreur lors de l\'upload de la cover');
+    if (error instanceof Error) throw error
+    throw new Error('Erreur lors de l\'upload de la cover')
   }
 }
 
@@ -133,14 +133,14 @@ export async function uploadVinylCover(vinylId: string, file: File): Promise<str
  */
 export async function copyExternalCoverToStorage(
   albumId: string,
-  imageUrl: string
+  imageUrl: string,
 ): Promise<string> {
   try {
-    const file = await fetchImageAsFile(imageUrl, `cover-${albumId}.jpg`);
-    return await uploadAlbumCover(albumId, file);
+    const file = await fetchImageAsFile(imageUrl, `cover-${albumId}.jpg`)
+    return await uploadAlbumCover(albumId, file)
   } catch (error) {
-    console.error('Erreur copie cover externe:', error);
-    throw new Error('Impossible de copier la cover');
+    console.error('Erreur copie cover externe:', error)
+    throw new Error('Impossible de copier la cover')
   }
 }
 
@@ -148,15 +148,15 @@ export async function copyExternalCoverToStorage(
  * Supprime une cover d'album
  */
 export async function deleteAlbumCover(albumId: string): Promise<void> {
-  const filePath = `albums/${albumId}.webp`;
+  const filePath = `albums/${albumId}.webp`
 
   const { error } = await supabase.storage
     .from(COVERS_BUCKET)
-    .remove([filePath]);
+    .remove([filePath])
 
   if (error) {
-    console.error('Erreur suppression cover album:', error);
-    throw new Error('Impossible de supprimer la cover');
+    console.error('Erreur suppression cover album:', error)
+    throw new Error('Impossible de supprimer la cover')
   }
 }
 
@@ -164,15 +164,15 @@ export async function deleteAlbumCover(albumId: string): Promise<void> {
  * Supprime une cover de vinyle
  */
 export async function deleteVinylCover(vinylId: string): Promise<void> {
-  const filePath = `vinyls/${vinylId}.webp`;
+  const filePath = `vinyls/${vinylId}.webp`
 
   const { error } = await supabase.storage
     .from(COVERS_BUCKET)
-    .remove([filePath]);
+    .remove([filePath])
 
   if (error) {
-    console.error('Erreur suppression cover vinyl:', error);
-    throw new Error('Impossible de supprimer la cover');
+    console.error('Erreur suppression cover vinyl:', error)
+    throw new Error('Impossible de supprimer la cover')
   }
 }
 
@@ -181,9 +181,9 @@ export async function deleteVinylCover(vinylId: string): Promise<void> {
  */
 export function generateImagePreview(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error('Erreur lors de la lecture de l\'image'));
-    reader.readAsDataURL(file);
-  });
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('Erreur lors de la lecture de l\'image'))
+    reader.readAsDataURL(file)
+  })
 }

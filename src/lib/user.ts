@@ -34,7 +34,7 @@ export async function isUsernameAvailable(username: string): Promise<boolean> {
  * @returns true si valide, false sinon
  */
 export function validateBio(bio: string): boolean {
-  return bio.length <= 200;
+  return bio.length <= 200
 }
 
 /**
@@ -45,33 +45,33 @@ export function validateBio(bio: string): boolean {
  */
 export async function checkUsernameAvailability(
   username: string,
-  excludeUserId?: string
+  excludeUserId?: string,
 ): Promise<boolean> {
   try {
     const { data, error } = await supabase
       .from('users')
       .select('uid, username')
-      .eq('username', username);
+      .eq('username', username)
 
     if (error) {
-      console.error('Erreur lors de la vérification du username:', error);
-      return false;
+      console.error('Erreur lors de la vérification du username:', error)
+      return false
     }
 
     // Si aucun résultat, le username est disponible
     if (!data || data.length === 0) {
-      return true;
+      return true
     }
 
     // Si un utilisateur existe avec ce username, vérifier si c'est l'utilisateur actuel
     if (excludeUserId) {
-      return data[0].uid === excludeUserId;
+      return data[0].uid === excludeUserId
     }
 
-    return false;
+    return false
   } catch (err) {
-    console.error('Erreur inattendue:', err);
-    return false;
+    console.error('Erreur inattendue:', err)
+    return false
   }
 }
 
@@ -88,21 +88,21 @@ export async function updateUserProfile(
     last_name?: string;
     bio?: string;
     photo_url?: string;
-  }
+  },
 ): Promise<void> {
   // Filtrer les valeurs undefined
   const cleanData = Object.fromEntries(
-    Object.entries(data).filter(([, value]) => value !== undefined)
-  );
+    Object.entries(data).filter(([, value]) => value !== undefined),
+  )
 
   const { error } = await supabase
     .from('users')
     .update(cleanData)
-    .eq('uid', userId);
+    .eq('uid', userId)
 
   if (error) {
-    console.error('Erreur lors de la mise à jour du profil:', error);
-    throw new Error('Impossible de mettre à jour le profil');
+    console.error('Erreur lors de la mise à jour du profil:', error)
+    throw new Error('Impossible de mettre à jour le profil')
   }
 }
 
@@ -112,16 +112,16 @@ export async function getUserByUid(uid: string): Promise<User | null> {
       .from('users')
       .select('*')
       .eq('uid', uid)
-      .single();
+      .single()
 
     if (error) {
-      console.error('Erreur lors de la récupération de l\'utilisateur:', error);
-      return null;
+      console.error('Erreur lors de la récupération de l\'utilisateur:', error)
+      return null
     }
 
-    return data as User;
+    return data as User
   } catch (err) {
-    console.error('Erreur inattendue:', err);
-    return null;
+    console.error('Erreur inattendue:', err)
+    return null
   }
 }

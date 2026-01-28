@@ -7,7 +7,7 @@ import type { CommentWithUser } from '../types/comment'
 export async function addComment(
   postId: string,
   userId: string,
-  content: string
+  content: string,
 ): Promise<void> {
   const { error } = await supabase
     .from('comments')
@@ -44,7 +44,7 @@ export async function deleteComment(commentId: string): Promise<void> {
 export function subscribeToPostComments(
   postId: string,
   onData: (comments: CommentWithUser[]) => void,
-  onError: (error: Error) => void
+  onError: (error: Error) => void,
 ): () => void {
   // Charger les commentaires initiaux
   const loadComments = async () => {
@@ -103,7 +103,7 @@ export function subscribeToPostComments(
       () => {
         // Recharger tous les commentaires quand il y a un changement
         loadComments()
-      }
+      },
     )
     .subscribe()
 

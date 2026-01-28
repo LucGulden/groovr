@@ -1,21 +1,21 @@
-import { useEffect, useRef } from 'react';
-import { AnimatePresence } from 'framer-motion';
-import { useAuth } from '../hooks/useAuth';
-import { useNotifications } from '../hooks/useNotifications';
-import NotificationItem from '../components/NotificationItem';
+import { useEffect, useRef } from 'react'
+import { AnimatePresence } from 'framer-motion'
+import { useAuth } from '../hooks/useAuth'
+import { useNotifications } from '../hooks/useNotifications'
+import NotificationItem from '../components/NotificationItem'
 
 export default function Notifications() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth()
   
   // Attendre que l'auth soit chargée
   if (authLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       </div>
-    );
+    )
   }
 
   // Si pas de user, rediriger ou afficher message
@@ -32,10 +32,10 @@ export default function Notifications() {
           </p>
         </div>
       </div>
-    );
+    )
   }
 
-  return <NotificationsContent userId={user.id} />;
+  return <NotificationsContent userId={user.id} />
 }
 
 function NotificationsContent({ userId }: { userId: string }) {
@@ -47,46 +47,46 @@ function NotificationsContent({ userId }: { userId: string }) {
     unreadCount,
     loadMore,
     handleMarkAllAsRead,
-  } = useNotifications(userId);
+  } = useNotifications(userId)
 
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
 
   // Dire à Navigation qu'on est sur la page notifications
   useEffect(() => {
-    window.dispatchEvent(new Event('notifications-read'));
+    window.dispatchEvent(new Event('notifications-read'))
     
     // Marquer toutes les notifications comme lues
     if (unreadCount > 0) {
-      handleMarkAllAsRead();
+      handleMarkAllAsRead()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Une seule fois au montage
+  }, []) // Une seule fois au montage
 
   // Infinite scroll avec Intersection Observer
   useEffect(() => {
-    if (loading || loadingMore || !hasMore) return;
+    if (loading || loadingMore || !hasMore) return
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          loadMore();
+          loadMore()
         }
       },
-      { threshold: 0.1 }
-    );
+      { threshold: 0.1 },
+    )
 
-    const currentRef = loadMoreRef.current;
+    const currentRef = loadMoreRef.current
     if (currentRef) {
-      observerRef.current.observe(currentRef);
+      observerRef.current.observe(currentRef)
     }
 
     return () => {
       if (observerRef.current && currentRef) {
-        observerRef.current.unobserve(currentRef);
+        observerRef.current.unobserve(currentRef)
       }
-    };
-  }, [loading, loadingMore, hasMore, loadMore]);
+    }
+  }, [loading, loadingMore, hasMore, loadMore])
 
   // Loading initial
   if (loading) {
@@ -94,11 +94,11 @@ function NotificationsContent({ userId }: { userId: string }) {
       <>
         <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         </div>
       </>
-    );
+    )
   }
 
   return (
@@ -143,7 +143,7 @@ function NotificationsContent({ userId }: { userId: string }) {
             {hasMore && (
               <div ref={loadMoreRef} className="p-4 text-center">
                 {loadingMore && (
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto" />
                 )}
               </div>
             )}
@@ -151,5 +151,5 @@ function NotificationsContent({ userId }: { userId: string }) {
         )}
       </div>
     </>
-  );
+  )
 }

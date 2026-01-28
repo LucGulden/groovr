@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { searchSpotifyAlbums, type SpotifyAlbumResult } from '../lib/spotify';
-import { createAlbum, getAlbumBySpotifyId } from '../lib/vinyls';
-import type { Album } from '../types/vinyl';
-import VinylImage from './VinylImage';
+import { useState, useEffect } from 'react'
+import { searchSpotifyAlbums, type SpotifyAlbumResult } from '../lib/spotify'
+import { createAlbum, getAlbumBySpotifyId } from '../lib/vinyls'
+import type { Album } from '../types/vinyl'
+import VinylImage from './VinylImage'
 
 interface SpotifyAlbumImportProps {
   onAlbumCreated: (album: Album) => void;
@@ -11,48 +11,48 @@ interface SpotifyAlbumImportProps {
 }
 
 export default function SpotifyAlbumImport({ onAlbumCreated, onBack, userId }: SpotifyAlbumImportProps) {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SpotifyAlbumResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<SpotifyAlbumResult[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Debounce search
   useEffect(() => {
     if (!query || query.trim().length < 2) {
-      setResults([]);
-      return;
+      setResults([])
+      return
     }
 
     const timer = setTimeout(async () => {
-      setIsSearching(true);
-      setError(null);
+      setIsSearching(true)
+      setError(null)
 
       try {
-        const data = await searchSpotifyAlbums(query);
-        setResults(data);
+        const data = await searchSpotifyAlbums(query)
+        setResults(data)
       } catch (err) {
-        console.error('Erreur recherche Spotify:', err);
-        setError('Erreur lors de la recherche Spotify');
+        console.error('Erreur recherche Spotify:', err)
+        setError('Erreur lors de la recherche Spotify')
       } finally {
-        setIsSearching(false);
+        setIsSearching(false)
       }
-    }, 300);
+    }, 300)
 
-    return () => clearTimeout(timer);
-  }, [query]);
+    return () => clearTimeout(timer)
+  }, [query])
 
   const handleSelectAlbum = async (spotifyAlbum: SpotifyAlbumResult) => {
-    setIsImporting(true);
-    setError(null);
+    setIsImporting(true)
+    setError(null)
 
     try {
       // Vérifier si l'album existe déjà
-      const existingAlbum = await getAlbumBySpotifyId(spotifyAlbum.spotifyId);
+      const existingAlbum = await getAlbumBySpotifyId(spotifyAlbum.spotifyId)
 
       if (existingAlbum) {
-        onAlbumCreated(existingAlbum);
-        return;
+        onAlbumCreated(existingAlbum)
+        return
       }
 
       // Créer l'album avec l'URL Spotify directement
@@ -64,17 +64,17 @@ export default function SpotifyAlbumImport({ onAlbumCreated, onBack, userId }: S
         spotifyId: spotifyAlbum.spotifyId,
         spotifyUrl: spotifyAlbum.spotifyUrl,
         createdBy: userId,
-      });
+      })
 
-      onAlbumCreated(newAlbum);
+      onAlbumCreated(newAlbum)
     } catch (err) {
-      console.error('Erreur import album:', err);
-      setError(err instanceof Error ? err.message : 'Erreur lors de l\'import');
-      setIsImporting(false);
+      console.error('Erreur import album:', err)
+      setError(err instanceof Error ? err.message : 'Erreur lors de l\'import')
+      setIsImporting(false)
     }
-  };
+  }
 
-  const hasSearched = query.trim().length > 0;
+  const hasSearched = query.trim().length > 0
 
   return (
     <div className="w-full">
@@ -108,7 +108,7 @@ export default function SpotifyAlbumImport({ onAlbumCreated, onBack, userId }: S
           />
           {isSearching && (
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#1DB954] border-t-transparent"></div>
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#1DB954] border-t-transparent" />
             </div>
           )}
         </div>
@@ -124,7 +124,7 @@ export default function SpotifyAlbumImport({ onAlbumCreated, onBack, userId }: S
       {/* Overlay d'import */}
       {isImporting && (
         <div className="flex flex-col items-center justify-center py-16">
-          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent"></div>
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
           <p className="text-[var(--foreground-muted)]">Import en cours...</p>
         </div>
       )}
@@ -181,5 +181,5 @@ export default function SpotifyAlbumImport({ onAlbumCreated, onBack, userId }: S
         </div>
       )}
     </div>
-  );
+  )
 }

@@ -32,7 +32,7 @@ export default function Feed({ userId, profileFeed }: FeedProps) {
           loadMore()
         }
       },
-      { threshold: 1.0 }
+      { threshold: 1.0 },
     )
 
     if (observerTarget.current) {

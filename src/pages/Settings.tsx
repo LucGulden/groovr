@@ -1,65 +1,65 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import EditProfileForm from '../components/EditProfileForm';
-import { getUserByUid } from '../lib/user';
-import type { User } from '../types/user';
+import { useEffect, useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
+import EditProfileForm from '../components/EditProfileForm'
+import { getUserByUid } from '../lib/user'
+import type { User } from '../types/user'
 
 export default function Settings() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
-  const { user: authUser, loading: authLoading } = useAuth();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user: authUser, loading: authLoading } = useAuth()
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false)
 
   // Charger les données utilisateur depuis public.users
   useEffect(() => {
     const loadUser = async () => {
       if (!authUser) {
-        setLoading(false);
-        return;
+        setLoading(false)
+        return
       }
 
-      const userData = await getUserByUid(authUser.id);
-      setUser(userData);
-      setLoading(false);
-    };
+      const userData = await getUserByUid(authUser.id)
+      setUser(userData)
+      setLoading(false)
+    }
 
     if (!authLoading) {
-      loadUser();
+      loadUser()
     }
-  }, [authUser, authLoading]);
+  }, [authUser, authLoading])
 
   // Protection de la route : rediriger vers /login si non authentifié
   useEffect(() => {
     if (!loading && !authUser) {
-      navigate('/login');
+      navigate('/login')
     }
-  }, [authUser, loading, navigate]);
+  }, [authUser, loading, navigate])
 
   const handleSuccess = () => {
-    setShowSuccessToast(true);
+    setShowSuccessToast(true)
     setTimeout(() => {
-      setShowSuccessToast(false);
+      setShowSuccessToast(false)
       // Rafraîchir la page pour voir les changements
-      window.location.reload();
-    }, 2000);
-  };
+      window.location.reload()
+    }, 2000)
+  }
 
   // Afficher un spinner pendant le chargement
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[var(--primary)] border-t-transparent"></div>
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[var(--primary)] border-t-transparent" />
       </div>
-    );
+    )
   }
 
   // Ne rien afficher si l'utilisateur n'est pas connecté (redirection en cours)
   if (!user) {
-    return null;
+    return null
   }
 
   return (
@@ -120,5 +120,5 @@ export default function Settings() {
         )}
       </div>
     </div>
-  );
+  )
 }

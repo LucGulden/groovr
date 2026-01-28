@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { createVinyl, updateVinylCover } from '../lib/vinyls';
-import { uploadVinylCover, generateImagePreview } from '../lib/covers';
-import type { Album, Vinyl } from '../types/vinyl';
-import VinylImage from './VinylImage';
+import { useState } from 'react'
+import { createVinyl, updateVinylCover } from '../lib/vinyls'
+import { uploadVinylCover, generateImagePreview } from '../lib/covers'
+import type { Album, Vinyl } from '../types/vinyl'
+import VinylImage from './VinylImage'
 
 interface CreateVinylFormProps {
   album: Album;
@@ -24,7 +24,7 @@ const VINYL_FORMATS = [
   'Single',
   'Maxi-Single',
   'Picture Disc',
-];
+]
 
 // Pays courants pour les pressages
 const COUNTRIES = [
@@ -41,48 +41,48 @@ const COUNTRIES = [
   'Belgium',
   'Sweden',
   'Other',
-];
+]
 
 export default function CreateVinylForm({ album, onVinylCreated, onCancel, userId }: CreateVinylFormProps) {
-  const [title, setTitle] = useState(album.title);
-  const [year, setYear] = useState(album.year?.toString() || '');  const [label, setLabel] = useState('');
-  const [catalogNumber, setCatalogNumber] = useState('');
-  const [country, setCountry] = useState('');
-  const [format, setFormat] = useState('');
-  const [customCoverFile, setCustomCoverFile] = useState<File | null>(null);
-  const [customCoverPreview, setCustomCoverPreview] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [title, setTitle] = useState(album.title)
+  const [year, setYear] = useState(album.year?.toString() || '');  const [label, setLabel] = useState('')
+  const [catalogNumber, setCatalogNumber] = useState('')
+  const [country, setCountry] = useState('')
+  const [format, setFormat] = useState('')
+  const [customCoverFile, setCustomCoverFile] = useState<File | null>(null)
+  const [customCoverPreview, setCustomCoverPreview] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Tous les champs obligatoires sauf cover custom et catalog number
-  const isValid = title.trim() && year.trim() && label.trim() && catalogNumber.trim() && country.trim() && format.trim();
+  const isValid = title.trim() && year.trim() && label.trim() && catalogNumber.trim() && country.trim() && format.trim()
 
   const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const file = e.target.files?.[0]
+    if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      setError('Le fichier doit être une image');
-      return;
+      setError('Le fichier doit être une image')
+      return
     }
 
-    setCustomCoverFile(file);
-    const preview = await generateImagePreview(file);
-    setCustomCoverPreview(preview);
-    setError(null);
-  };
+    setCustomCoverFile(file)
+    const preview = await generateImagePreview(file)
+    setCustomCoverPreview(preview)
+    setError(null)
+  }
 
   const handleRemoveCover = () => {
-    setCustomCoverFile(null);
-    setCustomCoverPreview(null);
-  };
+    setCustomCoverFile(null)
+    setCustomCoverPreview(null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isValid) return;
+    e.preventDefault()
+    if (!isValid) return
 
-    setIsSubmitting(true);
-    setError(null);
+    setIsSubmitting(true)
+    setError(null)
 
     try {
       // Créer le vinyle
@@ -97,29 +97,29 @@ export default function CreateVinylForm({ album, onVinylCreated, onCancel, userI
         format: format.trim(),
         coverUrl: album.cover_url, // Par défaut, utiliser la cover de l'album
         createdBy: userId,
-      });
+      })
 
       // Si une cover custom a été uploadée, la remplacer
       if (customCoverFile) {
         try {
-          const coverUrl = await uploadVinylCover(newVinyl.id, customCoverFile);
-          await updateVinylCover(newVinyl.id, coverUrl);
-          newVinyl.cover_url = coverUrl;
+          const coverUrl = await uploadVinylCover(newVinyl.id, customCoverFile)
+          await updateVinylCover(newVinyl.id, coverUrl)
+          newVinyl.cover_url = coverUrl
         } catch (coverError) {
-          console.error('Erreur upload cover custom:', coverError);
+          console.error('Erreur upload cover custom:', coverError)
         }
       }
 
-      onVinylCreated(newVinyl);
+      onVinylCreated(newVinyl)
     } catch (err) {
-      console.error('Erreur création vinyle:', err);
-      setError(err instanceof Error ? err.message : 'Erreur lors de la création');
-      setIsSubmitting(false);
+      console.error('Erreur création vinyle:', err)
+      setError(err instanceof Error ? err.message : 'Erreur lors de la création')
+      setIsSubmitting(false)
     }
-  };
+  }
 
   // Cover à afficher (custom ou album)
-  const displayCover = customCoverPreview || album.cover_url;
+  const displayCover = customCoverPreview || album.cover_url
 
   return (
     <div className="w-full">
@@ -328,7 +328,7 @@ export default function CreateVinylForm({ album, onVinylCreated, onCancel, userI
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 Création...
               </span>
             ) : (
@@ -338,5 +338,5 @@ export default function CreateVinylForm({ album, onVinylCreated, onCancel, userI
         </div>
       </form>
     </div>
-  );
+  )
 }

@@ -1,24 +1,24 @@
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import Avatar from './Avatar';
-import VinylImage from './VinylImage';
-import { getRelativeTimeString } from '../lib/date-utils';
-import type { NotificationWithDetails } from '../types/notification';
+import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import Avatar from './Avatar'
+import VinylImage from './VinylImage'
+import { getRelativeTimeString } from '../lib/date-utils'
+import type { NotificationWithDetails } from '../types/notification'
 
 interface NotificationItemProps {
   notification: NotificationWithDetails;
 }
 
 export default function NotificationItem({ 
-  notification
+  notification,
 }: NotificationItemProps) {
-  const { actor, type, read, created_at, post, comment } = notification;
+  const { actor, type, read, created_at, post, comment } = notification
 
   // Générer le message selon le type
   const getMessage = () => {
     const actorName = actor.first_name && actor.last_name 
       ? `${actor.first_name} ${actor.last_name}`
-      : `@${actor.username}`;
+      : `@${actor.username}`
 
     switch (type) {
       case 'new_follower':
@@ -26,13 +26,13 @@ export default function NotificationItem({
           <>
             <span className="font-semibold">{actorName}</span> a commencé à vous suivre
           </>
-        );
+        )
       case 'post_like':
         return (
           <>
             <span className="font-semibold">{actorName}</span> a aimé votre post
           </>
-        );
+        )
       case 'post_comment':
         return (
           <>
@@ -43,21 +43,21 @@ export default function NotificationItem({
               </div>
             )}
           </>
-        );
+        )
       default:
-        return null;
+        return null
     }
-  };
+  }
 
   // Déterminer le lien de destination
   const getDestinationLink = () => {
     if (type === 'new_follower') {
-      return `/profile/${actor.username}`;
+      return `/profile/${actor.username}`
     }
     // Pour post_like et post_comment, on pourrait rediriger vers le post
     // Pour l'instant, on redirige vers le profil de l'acteur
-    return `/profile/${actor.username}`;
-  };
+    return `/profile/${actor.username}`
+  }
 
   return (
     <motion.div
@@ -114,5 +114,5 @@ export default function NotificationItem({
         </div>
       </Link>
     </motion.div>
-  );
+  )
 }

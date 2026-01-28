@@ -1,5 +1,5 @@
-import type { Vinyl } from '../types/vinyl';
-import VinylImage from './VinylImage';
+import type { Vinyl } from '../types/vinyl'
+import VinylImage from './VinylImage'
 
 interface VinylCardProps {
   vinyl: Vinyl;
@@ -93,5 +93,5 @@ export default function VinylCard({
         </div>
       )}
     </button>
-  );
+  )
 }

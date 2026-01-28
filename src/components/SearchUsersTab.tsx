@@ -1,43 +1,43 @@
-import { useState, useEffect } from 'react';
-import { searchUsers } from '../lib/search';
-import UserListItem from './UserListItem';
-import type { User } from '../types/user';
+import { useState, useEffect } from 'react'
+import { searchUsers } from '../lib/search'
+import UserListItem from './UserListItem'
+import type { User } from '../types/user'
 
 interface SearchUsersTabProps {
   query: string;
 }
 
 export default function SearchUsersTab({ query }: SearchUsersTabProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+  const [searchResults, setSearchResults] = useState<User[]>([])
 
-  const hasSearched = query.trim().length > 0;
+  const hasSearched = query.trim().length > 0
 
   // Debounce search
   useEffect(() => {
     if (!query || query.trim().length < 2) {
-      setSearchResults([]);
-      return;
+      setSearchResults([])
+      return
     }
 
     const timer = setTimeout(async () => {
-      setIsLoading(true);
-      setError(null);
+      setIsLoading(true)
+      setError(null)
 
       try {
-        const results = await searchUsers(query);
-        setSearchResults(results);
+        const results = await searchUsers(query)
+        setSearchResults(results)
       } catch (err) {
-        console.error('[SearchUsersTab] Erreur lors de la recherche:', err);
-        setError(err instanceof Error ? err : new Error('Erreur lors de la recherche'));
+        console.error('[SearchUsersTab] Erreur lors de la recherche:', err)
+        setError(err instanceof Error ? err : new Error('Erreur lors de la recherche'))
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    }, 300);
+    }, 300)
 
-    return () => clearTimeout(timer);
-  }, [query]);
+    return () => clearTimeout(timer)
+  }, [query])
 
   return (
     <div className="w-full">
@@ -66,10 +66,10 @@ export default function SearchUsersTab({ query }: SearchUsersTabProps) {
               className="animate-pulse rounded-lg border border-[var(--background-lighter)] bg-[var(--background-light)] p-4"
             >
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-[var(--background-lighter)]"></div>
+                <div className="h-12 w-12 rounded-full bg-[var(--background-lighter)]" />
                 <div className="flex-1">
-                  <div className="mb-2 h-4 w-32 rounded bg-[var(--background-lighter)]"></div>
-                  <div className="h-3 w-24 rounded bg-[var(--background-lighter)]"></div>
+                  <div className="mb-2 h-4 w-32 rounded bg-[var(--background-lighter)]" />
+                  <div className="h-3 w-24 rounded bg-[var(--background-lighter)]" />
                 </div>
               </div>
             </div>
@@ -121,5 +121,5 @@ export default function SearchUsersTab({ query }: SearchUsersTabProps) {
         </div>
       )}
     </div>
-  );
+  )
 }

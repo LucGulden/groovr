@@ -70,7 +70,7 @@ export default function CommentItem({ comment, currentUserId, onDelete }: Commen
           onClick={handleDelete}
           disabled={isDeleting}
           className="flex-shrink-0 text-[var(--foreground-muted)] hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={isDeleting ? "Suppression en cours..." : "Supprimer"}
+          title={isDeleting ? 'Suppression en cours...' : 'Supprimer'}
         >
           {isDeleting ? (
             <svg

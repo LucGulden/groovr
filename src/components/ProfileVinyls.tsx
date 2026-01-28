@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import VinylGrid from './VinylGrid';
-import AddVinylModal from './AddVinylModal';
-import { useVinylsPagination } from '../hooks/useVinylsPagination';
-import { useAuth } from '../hooks/useAuth';
-import type { UserVinylType, Vinyl, Album } from '../types/vinyl';
-import { useEffect } from 'react';
+import { useState } from 'react'
+import VinylGrid from './VinylGrid'
+import AddVinylModal from './AddVinylModal'
+import { useVinylsPagination } from '../hooks/useVinylsPagination'
+import { useAuth } from '../hooks/useAuth'
+import type { UserVinylType, Vinyl, Album } from '../types/vinyl'
+import { useEffect } from 'react'
 
 interface ProfileVinylsProps {
   userId: string;
@@ -19,9 +19,9 @@ export default function ProfileVinyls({
   type,
   isOwnProfile,
   username,
-  onOpenAddVinyl
+  onOpenAddVinyl,
 }: ProfileVinylsProps) {
-  const { user } = useAuth();
+  const { user } = useAuth()
   const {
     vinyls,
     loading,
@@ -30,43 +30,43 @@ export default function ProfileVinyls({
     error,
     total,
     loadMore,
-    refresh
-  } = useVinylsPagination({ userId, type });
+    refresh,
+  } = useVinylsPagination({ userId, type })
 
-  const [selectedVinyl, setSelectedVinyl] = useState<Vinyl | null>(null);
-  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedVinyl, setSelectedVinyl] = useState<Vinyl | null>(null)
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     const handleVinylAdded = () => {
-      refresh();
-    };
+      refresh()
+    }
 
-    window.addEventListener('vinyl-added', handleVinylAdded);
-    return () => window.removeEventListener('vinyl-added', handleVinylAdded);
-  }, [refresh]);
+    window.addEventListener('vinyl-added', handleVinylAdded)
+    return () => window.removeEventListener('vinyl-added', handleVinylAdded)
+  }, [refresh])
 
   const handleVinylClick = (vinyl: Vinyl, album: Album) => {
-    setSelectedVinyl(vinyl);
-    setSelectedAlbum(album);
-    setIsModalOpen(true);
-  };
+    setSelectedVinyl(vinyl)
+    setSelectedAlbum(album)
+    setIsModalOpen(true)
+  }
 
   const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedVinyl(null);
-    setSelectedAlbum(null);
-  };
+    setIsModalOpen(false)
+    setSelectedVinyl(null)
+    setSelectedAlbum(null)
+  }
 
   const handleModalSuccess = () => {
-    handleModalClose();
-    refresh();
-    window.dispatchEvent(new Event('vinyl-added'));
-  };
+    handleModalClose()
+    refresh()
+    window.dispatchEvent(new Event('vinyl-added'))
+  }
 
   // Empty state
   if (!loading && vinyls.length === 0) {
-    const isCollection = type === 'collection';
+    const isCollection = type === 'collection'
     
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center text-center">
@@ -96,7 +96,7 @@ export default function ProfileVinyls({
           </button>
         )}
       </div>
-    );
+    )
   }
 
   // Error state
@@ -111,7 +111,7 @@ export default function ProfileVinyls({
           {error.message}
         </p>
       </div>
-    );
+    )
   }
 
   return (
@@ -154,5 +154,5 @@ export default function ProfileVinyls({
         />
       )}
     </div>
-  );
+  )
 }

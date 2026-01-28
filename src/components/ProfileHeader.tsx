@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import Avatar from './Avatar';
-import Button from './Button';
-import { followUser, unfollowUser, isFollowing } from '../lib/follows';
-import { useAuth } from '../hooks/useAuth';
-import { type User } from '../types/user';
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import Avatar from './Avatar'
+import Button from './Button'
+import { followUser, unfollowUser, isFollowing } from '../lib/follows'
+import { useAuth } from '../hooks/useAuth'
+import { type User } from '../types/user'
 
 interface ProfileStats {
   releasesCount: number;
@@ -26,51 +26,51 @@ export default function ProfileHeader({
   isOwnProfile,
   onFollowChange,
 }: ProfileHeaderProps) {
-  const { user: currentUser } = useAuth();
-  const [following, setFollowing] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { user: currentUser } = useAuth()
+  const [following, setFollowing] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
+  const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ')
 
   // Vérifier si on suit déjà cet utilisateur
   useEffect(() => {
-    if (!currentUser || isOwnProfile) return;
+    if (!currentUser || isOwnProfile) return
 
     const checkFollowing = async () => {
       try {
-        const result = await isFollowing(currentUser.id, user.uid);
-        setFollowing(result);
+        const result = await isFollowing(currentUser.id, user.uid)
+        setFollowing(result)
       } catch (error) {
-        console.error('Erreur lors de la vérification du follow:', error);
+        console.error('Erreur lors de la vérification du follow:', error)
       }
-    };
+    }
 
-    checkFollowing();
-  }, [currentUser, user.uid, isOwnProfile]);
+    checkFollowing()
+  }, [currentUser, user.uid, isOwnProfile])
 
   // Gérer le follow/unfollow
   const handleFollowToggle = async () => {
-    if (!currentUser) return;
+    if (!currentUser) return
 
     try {
-      setLoading(true);
+      setLoading(true)
       
       if (following) {
-        await unfollowUser(currentUser.id, user.uid);
-        setFollowing(false);
+        await unfollowUser(currentUser.id, user.uid)
+        setFollowing(false)
       } else {
-        await followUser(currentUser.id, user.uid);
-        setFollowing(true);
+        await followUser(currentUser.id, user.uid)
+        setFollowing(true)
       }
 
       // Notifier le parent pour rafraîchir les stats
-      onFollowChange?.();
+      onFollowChange?.()
     } catch (error) {
-      console.error('Erreur lors du follow/unfollow:', error);
+      console.error('Erreur lors du follow/unfollow:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="w-full">
@@ -188,5 +188,5 @@ export default function ProfileHeader({
         </div>
       </div>
     </div>
-  );
+  )
 }

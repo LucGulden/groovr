@@ -1,4 +1,4 @@
-import type { Artist } from '../types/vinyl';
+import type { Artist } from '../types/vinyl'
 
 interface ArtistCardProps {
   artist: Artist;
@@ -67,7 +67,7 @@ const ArtistPlaceholder = () => (
       opacity="0.4"
     />
   </svg>
-);
+)
 
 export default function ArtistCard({ artist, onClick }: ArtistCardProps) {
   return (
@@ -91,5 +91,5 @@ export default function ArtistCard({ artist, onClick }: ArtistCardProps) {
         {artist.name}
       </h3>
     </button>
-  );
+  )
 }

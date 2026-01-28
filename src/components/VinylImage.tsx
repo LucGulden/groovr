@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from 'react'
 
 interface VinylImageProps {
   src: string;
@@ -44,11 +44,11 @@ const VinylPlaceholder = () => (
     />
     <circle cx="220" cy="175" r="5" fill="var(--primary)" opacity="0.6" />
   </svg>
-);
+)
 
 export default function VinylImage({ src, alt, className = '' }: VinylImageProps) {
-  const [imageError, setImageError] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
 
   // Si pas d'URL ou erreur de chargement, afficher le placeholder
   if (!src || imageError) {
@@ -56,7 +56,7 @@ export default function VinylImage({ src, alt, className = '' }: VinylImageProps
       <div className={className}>
         <VinylPlaceholder />
       </div>
-    );
+    )
   }
 
   return (
@@ -82,5 +82,5 @@ export default function VinylImage({ src, alt, className = '' }: VinylImageProps
         onLoad={() => setImageLoaded(true)}
       />
     </div>
-  );
+  )
 }

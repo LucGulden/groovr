@@ -1,53 +1,53 @@
-import { useState, useEffect } from 'react';
-import { searchArtists } from '../lib/vinyls';
-import { useAuth } from '../hooks/useAuth';
-import ArtistCard from './ArtistCard';
-import AddVinylModal from './AddVinylModal';
-import type { Artist } from '../types/vinyl';
+import { useState, useEffect } from 'react'
+import { searchArtists } from '../lib/vinyls'
+import { useAuth } from '../hooks/useAuth'
+import ArtistCard from './ArtistCard'
+import AddVinylModal from './AddVinylModal'
+import type { Artist } from '../types/vinyl'
 
 interface SearchArtistsTabProps {
   query: string;
 }
 
 export default function SearchArtistsTab({ query }: SearchArtistsTabProps) {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [searchResults, setSearchResults] = useState<Artist[]>([]);
-  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+  const [searchResults, setSearchResults] = useState<Artist[]>([])
+  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const hasSearched = query.trim().length > 0;
+  const hasSearched = query.trim().length > 0
 
   // Debounce search
   useEffect(() => {
     if (!query || query.trim().length < 2) {
-      setSearchResults([]);
-      return;
+      setSearchResults([])
+      return
     }
 
     const timer = setTimeout(async () => {
-      setIsLoading(true);
-      setError(null);
+      setIsLoading(true)
+      setError(null)
 
       try {
-        const results = await searchArtists(query);
-        setSearchResults(results);
+        const results = await searchArtists(query)
+        setSearchResults(results)
       } catch (err) {
-        console.error('[SearchArtistsTab] Erreur lors de la recherche:', err);
-        setError(err instanceof Error ? err : new Error('Erreur lors de la recherche'));
+        console.error('[SearchArtistsTab] Erreur lors de la recherche:', err)
+        setError(err instanceof Error ? err : new Error('Erreur lors de la recherche'))
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    }, 300);
+    }, 300)
 
-    return () => clearTimeout(timer);
-  }, [query]);
+    return () => clearTimeout(timer)
+  }, [query])
 
   const handleArtistClick = async (artist: Artist) => {
-    setSelectedArtist(artist);
-    setIsModalOpen(true);
-  };
+    setSelectedArtist(artist)
+    setIsModalOpen(true)
+  }
 
   return (
     <div className="w-full">
@@ -72,8 +72,8 @@ export default function SearchArtistsTab({ query }: SearchArtistsTabProps) {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="animate-pulse">
-              <div className="aspect-square w-full rounded-lg bg-[var(--background-lighter)]"></div>
-              <div className="mt-3 h-4 rounded bg-[var(--background-lighter)]"></div>
+              <div className="aspect-square w-full rounded-lg bg-[var(--background-lighter)]" />
+              <div className="mt-3 h-4 rounded bg-[var(--background-lighter)]" />
             </div>
           ))}
         </div>
@@ -130,17 +130,17 @@ export default function SearchArtistsTab({ query }: SearchArtistsTabProps) {
           key={isModalOpen ? 'modal-open' : 'modal-closed'}
           isOpen={isModalOpen}
           onClose={() => {
-            setIsModalOpen(false);
-            setSelectedArtist(null);
+            setIsModalOpen(false)
+            setSelectedArtist(null)
           }}
           onSuccess={() => {
-            setIsModalOpen(false);
-            setSelectedArtist(null);
+            setIsModalOpen(false)
+            setSelectedArtist(null)
           }}
           userId={user.id}
           artist={selectedArtist}
         />
       )}
     </div>
-  );
+  )
 }

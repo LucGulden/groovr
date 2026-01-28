@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom'
 
 export default function Home() {
   return (
@@ -7,7 +7,7 @@ export default function Home() {
       <section className="relative overflow-hidden px-6 py-24 sm:py-32">
         <div className="mx-auto max-w-7xl text-center">
           <h1 className="mb-6 text-5xl font-bold tracking-tight text-[var(--foreground)] sm:text-7xl">
-            Bienvenue sur{" "}
+            Bienvenue sur{' '}
             <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] bg-clip-text text-transparent">
               FillCrate
             </span>
@@ -25,8 +25,8 @@ export default function Home() {
         </div>
 
         {/* Decorative elements */}
-        <div className="absolute left-1/4 top-20 h-64 w-64 rounded-full bg-[var(--primary)] opacity-10 blur-3xl"></div>
-        <div className="absolute right-1/4 bottom-20 h-64 w-64 rounded-full bg-[var(--secondary)] opacity-10 blur-3xl"></div>
+        <div className="absolute left-1/4 top-20 h-64 w-64 rounded-full bg-[var(--primary)] opacity-10 blur-3xl" />
+        <div className="absolute right-1/4 bottom-20 h-64 w-64 rounded-full bg-[var(--secondary)] opacity-10 blur-3xl" />
       </section>
 
       {/* Features Section */}
@@ -44,7 +44,7 @@ export default function Home() {
                 Collection
               </h3>
               <p className="text-[var(--foreground-muted)]">
-                {`Cataloguez vos vinyles, ajoutez des notes d'écoute et suivez l'évolution de votre collection au fil du temps.`}
+                {'Cataloguez vos vinyles, ajoutez des notes d\'écoute et suivez l\'évolution de votre collection au fil du temps.'}
               </p>
             </div>
 
@@ -55,7 +55,7 @@ export default function Home() {
                 Communauté
               </h3>
               <p className="text-[var(--foreground-muted)]">
-                {`Partagez vos dernières acquisitions, échangez des recommandations et connectez-vous avec d'autres collectionneurs.`}
+                {'Partagez vos dernières acquisitions, échangez des recommandations et connectez-vous avec d\'autres collectionneurs.'}
               </p>
             </div>
 
@@ -99,5 +99,5 @@ export default function Home() {
         </div>
       </section>
     </div>
-  );
+  )
 }

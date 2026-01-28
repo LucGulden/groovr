@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { createAlbum, updateAlbumCover } from '../lib/vinyls';
-import { uploadAlbumCover, generateImagePreview } from '../lib/covers';
-import type { Album } from '../types/vinyl';
+import { useState } from 'react'
+import { createAlbum, updateAlbumCover } from '../lib/vinyls'
+import { uploadAlbumCover, generateImagePreview } from '../lib/covers'
+import type { Album } from '../types/vinyl'
 
 interface ManualAlbumFormProps {
   onAlbumCreated: (album: Album) => void;
@@ -10,37 +10,37 @@ interface ManualAlbumFormProps {
 }
 
 export default function ManualAlbumForm({ onAlbumCreated, onBack, userId }: ManualAlbumFormProps) {
-  const [title, setTitle] = useState('');
-  const [artist, setArtist] = useState('');
-  const [year, setYear] = useState('');
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [title, setTitle] = useState('')
+  const [artist, setArtist] = useState('')
+  const [year, setYear] = useState('')
+  const [coverFile, setCoverFile] = useState<File | null>(null)
+  const [coverPreview, setCoverPreview] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const isValid = title.trim() && artist.trim() && year.trim() && coverFile;
+  const isValid = title.trim() && artist.trim() && year.trim() && coverFile
 
   const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const file = e.target.files?.[0]
+    if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      setError('Le fichier doit être une image');
-      return;
+      setError('Le fichier doit être une image')
+      return
     }
 
-    setCoverFile(file);
-    const preview = await generateImagePreview(file);
-    setCoverPreview(preview);
-    setError(null);
-  };
+    setCoverFile(file)
+    const preview = await generateImagePreview(file)
+    setCoverPreview(preview)
+    setError(null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isValid) return;
+    e.preventDefault()
+    if (!isValid) return
 
-    setIsSubmitting(true);
-    setError(null);
+    setIsSubmitting(true)
+    setError(null)
 
     try {
       // Créer l'album d'abord (sans cover pour avoir l'ID)
@@ -50,22 +50,22 @@ export default function ManualAlbumForm({ onAlbumCreated, onBack, userId }: Manu
         year: parseInt(year, 10),
         coverUrl: null,
         createdBy: userId,
-      });
+      })
 
       // Upload la cover
       if (coverFile) {
-        const coverUrl = await uploadAlbumCover(newAlbum.id, coverFile);
-        await updateAlbumCover(newAlbum.id, coverUrl);
-        newAlbum.cover_url = coverUrl;
+        const coverUrl = await uploadAlbumCover(newAlbum.id, coverFile)
+        await updateAlbumCover(newAlbum.id, coverUrl)
+        newAlbum.cover_url = coverUrl
       }
 
-      onAlbumCreated(newAlbum);
+      onAlbumCreated(newAlbum)
     } catch (err) {
-      console.error('Erreur création album:', err);
-      setError(err instanceof Error ? err.message : 'Erreur lors de la création');
-      setIsSubmitting(false);
+      console.error('Erreur création album:', err)
+      setError(err instanceof Error ? err.message : 'Erreur lors de la création')
+      setIsSubmitting(false)
     }
-  };
+  }
 
   return (
     <div className="w-full">
@@ -192,7 +192,7 @@ export default function ManualAlbumForm({ onAlbumCreated, onBack, userId }: Manu
         >
           {isSubmitting ? (
             <span className="flex items-center justify-center gap-2">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
               Création en cours...
             </span>
           ) : (
@@ -201,5 +201,5 @@ export default function ManualAlbumForm({ onAlbumCreated, onBack, userId }: Manu
         </button>
       </form>
     </div>
-  );
+  )
 }

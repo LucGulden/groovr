@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { addVinylToUser } from '../lib/vinyls';
-import type { Album, Artist, UserVinylType, Vinyl } from '../types/vinyl';
-import AlbumSearch from './AlbumSearch.tsx';
-import VinylSelection from './VinylSelection.tsx';
-import VinylDetails from './VinylDetails.tsx';
-import CreateAlbumForm from './CreateAlbumForm';
-import CreateVinylForm from './CreateVinylForm';
+import { useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { addVinylToUser } from '../lib/vinyls'
+import type { Album, Artist, UserVinylType, Vinyl } from '../types/vinyl'
+import AlbumSearch from './AlbumSearch.tsx'
+import VinylSelection from './VinylSelection.tsx'
+import VinylDetails from './VinylDetails.tsx'
+import CreateAlbumForm from './CreateAlbumForm'
+import CreateVinylForm from './CreateVinylForm'
 
 interface AddVinylModalProps {
   isOpen: boolean;
@@ -37,95 +37,95 @@ export default function AddVinylModal({
 }: AddVinylModalProps) {
 
   const [currentStep, setCurrentStep] = useState<ModalStep>(
-    initialStep ?? (initialVinyl ? 'vinylDetails' : initialAlbum ? 'vinylSelection' : 'albumSearch')
-  );
-  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(initialAlbum || null);
-  const [selectedVinyl, setSelectedVinyl] = useState<Vinyl | null>(initialVinyl || null);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+    initialStep ?? (initialVinyl ? 'vinylDetails' : initialAlbum ? 'vinylSelection' : 'albumSearch'),
+  )
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(initialAlbum || null)
+  const [selectedVinyl, setSelectedVinyl] = useState<Vinyl | null>(initialVinyl || null)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   const handleSelectAlbum = (album: Album) => {
-    setSelectedAlbum(album);
-    setCurrentStep('vinylSelection');
-  };
+    setSelectedAlbum(album)
+    setCurrentStep('vinylSelection')
+  }
 
   const handleSelectVinyl = (vinyl: Vinyl) => {
-    setSelectedVinyl(vinyl);
-    setCurrentStep('vinylDetails');
-  };
+    setSelectedVinyl(vinyl)
+    setCurrentStep('vinylDetails')
+  }
 
   const handleCreateAlbum = () => {
-    setCurrentStep('createAlbum');
-  };
+    setCurrentStep('createAlbum')
+  }
 
   const handleAlbumCreated = (album: Album) => {
-    setSelectedAlbum(album);
-    setCurrentStep('vinylSelection');
-  };
+    setSelectedAlbum(album)
+    setCurrentStep('vinylSelection')
+  }
 
   const handleCreateVinyl = () => {
-    setCurrentStep('createVinyl');
-  };
+    setCurrentStep('createVinyl')
+  }
 
   const handleVinylCreated = (vinyl: Vinyl) => {
-    setSelectedVinyl(vinyl);
-    setCurrentStep('vinylDetails');
-  };
+    setSelectedVinyl(vinyl)
+    setCurrentStep('vinylDetails')
+  }
 
   const handleBack = () => {
     if (currentStep === 'vinylSelection') {
-      if (initialAlbum) return; // Pas de retour si initialAlbum
-      setCurrentStep('albumSearch');
-      setSelectedAlbum(null);
+      if (initialAlbum) return // Pas de retour si initialAlbum
+      setCurrentStep('albumSearch')
+      setSelectedAlbum(null)
     } else if (currentStep === 'createAlbum') { // Pas de retour si initialStep est 'createAlbum'
-      if (initialStep === 'createAlbum') return; 
-      setCurrentStep('albumSearch');
+      if (initialStep === 'createAlbum') return 
+      setCurrentStep('albumSearch')
     } else if (currentStep === 'vinylDetails') {
-      if (initialVinyl) return;  // Pas de retour si initialVinyl
-      setCurrentStep('vinylSelection');
-      setSelectedVinyl(null);
+      if (initialVinyl) return  // Pas de retour si initialVinyl
+      setCurrentStep('vinylSelection')
+      setSelectedVinyl(null)
     } else if (currentStep === 'createVinyl') {
-      setCurrentStep('vinylSelection');
+      setCurrentStep('vinylSelection')
     }
-  };
+  }
 
   const handleAddVinyl = async (type: UserVinylType) => {
-    if (!selectedVinyl) return;
+    if (!selectedVinyl) return
 
     try {
-      setError(null);
-      await addVinylToUser(userId, selectedVinyl.id, type);
-      setSuccess(true);
+      setError(null)
+      await addVinylToUser(userId, selectedVinyl.id, type)
+      setSuccess(true)
 
       // Fermer après un délai
       setTimeout(() => {
-        handleSuccessClose();
-      }, 1500);
+        handleSuccessClose()
+      }, 1500)
     } catch (err) {
-      console.error('Erreur lors de l\'ajout:', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      console.error('Erreur lors de l\'ajout:', err)
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue')
     }
-  };
+  }
 
   const handleSuccessClose = () => {
-    setCurrentStep('albumSearch');
-    setSelectedAlbum(null);
-    setSelectedVinyl(null);
-    setError(null);
-    setSuccess(false);
-    onSuccess();
-  };
+    setCurrentStep('albumSearch')
+    setSelectedAlbum(null)
+    setSelectedVinyl(null)
+    setError(null)
+    setSuccess(false)
+    onSuccess()
+  }
 
   const handleClose = () => {
-    setCurrentStep('albumSearch');
-    setSelectedAlbum(null);
-    setSelectedVinyl(null);
-    setError(null);
-    setSuccess(false);
-    onClose();
-  };
+    setCurrentStep('albumSearch')
+    setSelectedAlbum(null)
+    setSelectedVinyl(null)
+    setError(null)
+    setSuccess(false)
+    onClose()
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -290,9 +290,9 @@ export default function AddVinylModal({
                   onAlbumCreated={handleAlbumCreated}
                   onCancel={() => {
                     if (initialStep === 'createAlbum') {
-                      handleClose();
+                      handleClose()
                     } else {
-                      setCurrentStep('albumSearch');
+                      setCurrentStep('albumSearch')
                     }
                   }}
                   userId={userId}
@@ -320,5 +320,5 @@ export default function AddVinylModal({
         </div>
       </div>
     </div>
-  );
+  )
 }
