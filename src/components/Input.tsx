@@ -1,7 +1,5 @@
-import React from 'react';
-
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label?: string; // ← Rendre optionnel
   error?: string;
   icon?: React.ReactNode;
 }
@@ -15,9 +13,11 @@ export default function Input({
 }: InputProps) {
   return (
     <div className="w-full">
-      <label className="mb-2 block text-sm font-medium text-[var(--foreground)]">
-        {label}
-      </label>
+      {label && ( // ← Afficher seulement si label existe
+        <label className="mb-2 block text-sm font-medium text-[var(--foreground)]">
+          {label}
+        </label>
+      )}
       <div className="relative">
         {icon && (
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[var(--foreground-muted)]">
@@ -40,5 +40,5 @@ export default function Input({
         <p className="mt-2 text-sm text-red-500">{error}</p>
       )}
     </div>
-  );
+  )
 }

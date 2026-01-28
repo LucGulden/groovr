@@ -1,154 +1,103 @@
-'use client';
-
-import React, { useState, useEffect, useCallback } from 'react';
-import AlbumCard from './AlbumCard';
-import Button from './Button';
-import { getOrCreateAlbum } from '@/lib/albums';
-import { isInCollection, isInWishlist } from '@/lib/user-albums';
-import { useAuth } from './AuthProvider';
-import type { AlbumSearchResult } from '@/types/album';
+import { useState, useEffect } from 'react'
+import { searchAlbums, getAlbumsByArtist } from '../lib/vinyls'
+import type { Album } from '../types/vinyl'
+import AlbumCard from './AlbumCard'
+import type { Artist } from '../types/vinyl'
+import Button from './Button'
 
 interface AlbumSearchProps {
-  onAlbumSelect: (album: AlbumSearchResult) => void;
+  onAlbumSelect: (album: Album) => void;
+  onCreateAlbum: () => void;
+  artist?: Artist;
 }
 
-interface AlbumStatus {
-  inCollection: boolean;
-  inWishlist: boolean;
-}
+export default function AlbumSearch({ onAlbumSelect, onCreateAlbum, artist }: AlbumSearchProps) {
+  const [query, setQuery] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+  const [searchResults, setSearchResults] = useState<Album[]>([])
 
-export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
-  const { user } = useAuth();
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<AlbumSearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [caching, setCaching] = useState(false);
-  const [albumStatuses, setAlbumStatuses] = useState<Map<string, AlbumStatus>>(new Map());
+  const hasSearched = query.trim().length > 0
 
-  // Fonction de recherche
-  const performSearch = useCallback(async (searchQuery: string) => {
-    if (!searchQuery || searchQuery.trim().length < 2) {
-      setResults([]);
-      setHasSearched(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      setHasSearched(true);
-
-      // 1. Recherche sur Spotify via l'API
-      const response = await fetch(`/api/spotify/search?q=${encodeURIComponent(searchQuery)}`);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la recherche');
-      }
-
-      const data = await response.json();
-      const spotifyResults: AlbumSearchResult[] = data.results || [];
-
-      // Afficher les résultats immédiatement
-      setResults(spotifyResults);
-      setLoading(false);
-
-      // 2. Cacher les albums dans Firestore en arrière-plan (côté client)
-      if (spotifyResults.length > 0) {
-        setCaching(true);
-        console.log(`[Cache Client] Début du cache de ${spotifyResults.length} albums dans Firestore...`);
-
-        try {
-          const cachedResults = await Promise.all(
-            spotifyResults.map(async (album) => {
-              try {
-                // Cacher l'album dans Firestore (l'utilisateur est authentifié côté client)
-                const firestoreAlbum = await getOrCreateAlbum({
-                  spotifyId: album.spotifyId,
-                  title: album.title,
-                  artist: album.artist,
-                  year: album.year,
-                  coverUrl: album.coverUrl,
-                  spotifyUrl: album.spotifyUrl,
-                });
-
-                console.log(`[Cache Client] ✓ Album caché: ${album.title} (ID: ${firestoreAlbum.id})`);
-
-                // Retourner l'album avec son ID Firestore
-                return {
-                  ...album,
-                  firestoreId: firestoreAlbum.id,
-                };
-              } catch (err) {
-                console.error(`[Cache Client] ✗ Erreur pour "${album.title}":`, err instanceof Error ? err.message : err);
-                // En cas d'erreur, retourner l'album sans ID Firestore
-                return album;
-              }
-            })
-          );
-
-          // Mettre à jour les résultats avec les IDs Firestore
-          setResults(cachedResults);
-
-          const cachedCount = cachedResults.filter(a => a.firestoreId).length;
-          console.log(`[Cache Client] Terminé: ${cachedCount}/${cachedResults.length} albums cachés`);
-
-          // 3. Vérifier le statut (collection/wishlist) de chaque album
-          if (user) {
-            console.log(`[Status] Vérification du statut pour ${cachedResults.length} albums...`);
-            const statusMap = new Map<string, AlbumStatus>();
-
-            await Promise.all(
-              cachedResults.map(async (album) => {
-                if (!album.firestoreId) return;
-
-                try {
-                  const [inCol, inWish] = await Promise.all([
-                    isInCollection(user.uid, album.firestoreId),
-                    isInWishlist(user.uid, album.firestoreId),
-                  ]);
-
-                  statusMap.set(album.firestoreId, {
-                    inCollection: inCol,
-                    inWishlist: inWish,
-                  });
-
-                  if (inCol || inWish) {
-                    console.log(`[Status] ${album.title}: Collection=${inCol}, Wishlist=${inWish}`);
-                  }
-                } catch (err) {
-                  console.error(`[Status] Erreur pour ${album.title}:`, err);
-                }
-              })
-            );
-
-            setAlbumStatuses(statusMap);
-            console.log(`[Status] Vérification terminée`);
-          }
-        } catch (err) {
-          console.error('[Cache Client] Erreur générale:', err);
-        } finally {
-          setCaching(false);
-        }
-      }
-    } catch (err) {
-      console.error('Erreur de recherche:', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
-      setResults([]);
-      setLoading(false);
-    }
-  }, [user]);
-
-  // Debounce de la recherche (500ms)
+  // Charger les albums de l'artiste au montage si artistId est défini
   useEffect(() => {
-    const debounce = setTimeout(() => {
-      performSearch(query);
-    }, 500);
+    if (artist) {
+      setIsLoading(true)
+      setError(null)
+      
+      getAlbumsByArtist(artist.id)
+        .then((results) => {
+          setSearchResults(results)
+        })
+        .catch((err) => {
+          console.error('[Search] Erreur lors du chargement des albums:', err)
+          setError(err instanceof Error ? err : new Error('Erreur lors du chargement'))
+        })
+        .finally(() => {
+          setIsLoading(false)
+        })
+    }
+  }, [artist])
 
-    return () => clearTimeout(debounce);
-  }, [query, performSearch]);
+  // Debounce search
+  useEffect(() => {
+    if (!query || query.trim().length < 1) {
+      // Si pas d'artiste, vider les résultats
+      if (!artist) {
+        setSearchResults([])
+        return
+      }
+      
+      // Si artiste défini et query vide, recharger tous ses albums
+      setIsLoading(true)
+      setError(null)
+      
+      getAlbumsByArtist(artist.id)
+        .then((results) => {
+          setSearchResults(results)
+        })
+        .catch((err) => {
+          console.error('[Search] Erreur lors du chargement des albums:', err)
+          setError(err instanceof Error ? err : new Error('Erreur lors du chargement'))
+        })
+        .finally(() => {
+          setIsLoading(false)
+        })
+      
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        let results: Album[]
+        
+        if (artist) {
+          // Recherche filtrée sur les albums de l'artiste
+          const artistAlbums = await getAlbumsByArtist(artist.id)
+          const searchLower = query.toLowerCase()
+          results = artistAlbums.filter(album => 
+            album.title.toLowerCase().includes(searchLower) ||
+            album.artist?.toLowerCase().includes(searchLower),
+          )
+        } else {
+          // Recherche globale
+          results = await searchAlbums(query)
+        }
+        
+        setSearchResults(results)
+      } catch (err) {
+        console.error('[Search] Erreur lors de la recherche:', err)
+        setError(err instanceof Error ? err : new Error('Erreur lors de la recherche'))
+      } finally {
+        setIsLoading(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [query, artist])
 
   return (
     <div className="w-full">
@@ -174,25 +123,31 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher un album ou un artiste..."
+            placeholder={artist ? 'Filtrer les albums...' : 'Rechercher un album ou un artiste...'}
             className="w-full rounded-lg border border-[var(--background-lighter)] bg-[var(--background-light)] py-4 pl-12 pr-4 text-lg text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+            autoFocus
           />
-          {loading && (
+          {isLoading && (
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent"></div>
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
             </div>
           )}
         </div>
         <p className="mt-2 text-sm text-[var(--foreground-muted)]">
-          {`Recherchez parmi des millions d'albums sur Spotify`}
+          {artist 
+            ? `Filtrez parmi les albums de ${artist.name || 'cet artiste'}`
+            : 'Recherchez dans notre bibliothèque d\'albums'
+          }
         </p>
-        {caching && (
-          <div className="mt-2 flex items-center gap-2 text-xs text-[var(--primary)]">
-            <div className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent"></div>
-            <span>Sauvegarde des albums dans votre bibliothèque...</span>
-          </div>
-        )}
       </div>
+      
+      {/* Bouton créer un album */}
+      <Button onClick={onCreateAlbum} variant="outline" className="mb-6 w-full">
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+        Vous ne trouvez pas ? Créer un album
+      </Button>
 
       {/* Erreur */}
       {error && (
@@ -205,117 +160,68 @@ export default function AlbumSearch({ onAlbumSelect }: AlbumSearchProps) {
                 clipRule="evenodd"
               />
             </svg>
-            <span>{error}</span>
+            <span>{error instanceof Error ? error.message : 'Une erreur est survenue'}</span>
           </div>
         </div>
       )}
 
       {/* Loading skeletons */}
-      {loading && results.length === 0 && (
+      {isLoading && searchResults.length === 0 && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {[...Array(8)].map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="animate-pulse">
-              <div className="aspect-square w-full rounded-lg bg-[var(--background-lighter)]"></div>
-              <div className="mt-3 h-4 rounded bg-[var(--background-lighter)]"></div>
-              <div className="mt-2 h-3 w-2/3 rounded bg-[var(--background-lighter)]"></div>
+              <div className="aspect-square w-full rounded-lg bg-[var(--background-lighter)]" />
+              <div className="mt-3 h-4 rounded bg-[var(--background-lighter)]" />
+              <div className="mt-2 h-3 w-2/3 rounded bg-[var(--background-lighter)]" />
             </div>
           ))}
         </div>
       )}
 
       {/* Résultats */}
-      {!loading && results.length > 0 && (
+      {!isLoading && searchResults.length > 0 && (
         <>
           <p className="mb-4 text-sm text-[var(--foreground-muted)]">
-            {results.length} résultat{results.length > 1 ? 's' : ''} trouvé{results.length > 1 ? 's' : ''}
+            {searchResults.length} résultat{searchResults.length > 1 ? 's' : ''} trouvé
+            {searchResults.length > 1 ? 's' : ''}
           </p>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {results.map((album) => {
-              const status = album.firestoreId ? albumStatuses.get(album.firestoreId) : null;
-              const inCollection = status?.inCollection || false;
-              const inWishlist = status?.inWishlist || false;
-              const isAdded = inCollection || inWishlist;
-
-              return (
-                <div key={album.spotifyId} className="relative">
-                  {/* Badges en haut de la card */}
-                  <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
-                    {inCollection && (
-                      <div className="flex items-center gap-1 rounded-full bg-green-500 px-2 py-1 text-xs font-medium text-white shadow-lg">
-                        <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        <span>En collection</span>
-                      </div>
-                    )}
-                    {inWishlist && (
-                      <div className="flex items-center gap-1 rounded-full bg-[var(--primary)] px-2 py-1 text-xs font-medium text-white shadow-lg">
-                        <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        <span>En wishlist</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <AlbumCard
-                    album={album}
-                    actions={
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!isAdded) {
-                            onAlbumSelect(album);
-                          }
-                        }}
-                        variant={isAdded ? 'outline' : 'primary'}
-                        disabled={isAdded}
-                        className={isAdded ? 'cursor-not-allowed opacity-60' : ''}
-                      >
-                        {inCollection
-                          ? 'Déjà en collection'
-                          : inWishlist
-                          ? 'Déjà en wishlist'
-                          : 'Ajouter'}
-                      </Button>
-                    }
-                  />
-                </div>
-              );
-            })}
+            {searchResults.map((album) => (
+              <AlbumCard
+                key={album.id}
+                album={album}
+                onClick={onAlbumSelect}
+              />
+            ))}
           </div>
         </>
       )}
 
       {/* Empty state */}
-      {!loading && hasSearched && results.length === 0 && !error && (
+      {!isLoading && hasSearched && searchResults.length === 0 && !error && (
         <div className="py-16 text-center">
           <div className="mb-4 text-6xl">🔍</div>
           <h3 className="mb-2 text-xl font-semibold text-[var(--foreground)]">
             Aucun résultat
           </h3>
           <p className="text-[var(--foreground-muted)]">
-            {`Essayez avec un autre nom d'album ou d'artiste`}
+            Aucun album trouvé dans votre bibliothèque. Essayez un autre nom d'album ou d'artiste.
           </p>
         </div>
       )}
 
       {/* État initial */}
-      {!loading && !hasSearched && (
+      {!isLoading && !hasSearched && !artist && (
         <div className="py-16 text-center">
           <div className="mb-4 text-6xl">💿</div>
           <h3 className="mb-2 text-xl font-semibold text-[var(--foreground)]">
             Recherchez votre premier album
           </h3>
           <p className="text-[var(--foreground-muted)]">
-            {`Tapez le nom d'un album ou d'un artiste pour commencer`}
+            Tapez le nom d'un album ou d'un artiste pour commencer
           </p>
         </div>
       )}
     </div>
-  );
+  )
 }

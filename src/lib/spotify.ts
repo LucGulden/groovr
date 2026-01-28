@@ -1,157 +1,198 @@
-import type { SpotifySearchResult, AlbumSearchResult } from '@/types/album';
+const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID
+const SPOTIFY_CLIENT_SECRET = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET
+const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token'
+const SPOTIFY_API_URL = 'https://api.spotify.com/v1'
 
-// Cache du token Spotify
-let cachedToken: string | null = null;
-let tokenExpiry: number | null = null;
+interface SpotifyToken {
+  access_token: string;
+  expires_at: number;
+}
+
+interface SpotifyImage {
+  url: string;
+  height: number;
+  width: number;
+}
+
+interface SpotifyArtist {
+  id: string;
+  name: string;
+}
+
+interface SpotifyAlbum {
+  id: string;
+  name: string;
+  artists: SpotifyArtist[];
+  images: SpotifyImage[];
+  release_date: string;
+  external_urls: {
+    spotify: string;
+  };
+}
+
+interface SpotifySearchResponse {
+  albums: {
+    items: SpotifyAlbum[];
+    total: number;
+  };
+}
+
+export interface SpotifyAlbumResult {
+  spotifyId: string;
+  spotifyUrl: string;
+  title: string;
+  artist: string;
+  coverUrl: string | null;
+  year: number | null;
+}
+
+// Token cache
+let cachedToken: SpotifyToken | null = null
 
 /**
- * Obtient un token d'accès Spotify via Client Credentials Flow
- * Le token est caché pendant 1 heure
+ * Récupère un token d'accès Spotify (Client Credentials Flow)
  */
-export async function getSpotifyAccessToken(): Promise<string> {
-  // Vérifier si le token caché est encore valide
-  if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
-    return cachedToken;
+async function getAccessToken(): Promise<string> {
+  // Vérifier si le token en cache est encore valide
+  if (cachedToken && cachedToken.expires_at > Date.now()) {
+    return cachedToken.access_token
   }
 
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error('Credentials Spotify manquants dans .env.local');
+  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
+    throw new Error('Clés API Spotify non configurées')
   }
 
-  try {
-    // Créer le header d'authentification Basic
-    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+  const credentials = btoa(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`)
 
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: 'grant_type=client_credentials',
-    });
+  const response = await fetch(SPOTIFY_TOKEN_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${credentials}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  })
 
-    if (!response.ok) {
-      throw new Error(`Erreur Spotify Auth: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    // Cacher le token (valide 1 heure)
-    cachedToken = data.access_token;
-    tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // -1 minute de sécurité
-
-    return cachedToken;
-  } catch (error) {
-    console.error('Erreur lors de l\'obtention du token Spotify:', error);
-    throw new Error('Impossible d\'obtenir le token Spotify');
+  if (!response.ok) {
+    throw new Error('Erreur lors de l\'authentification Spotify')
   }
+
+  const data = await response.json()
+
+  // Mettre en cache avec une marge de 60 secondes
+  cachedToken = {
+    access_token: data.access_token,
+    expires_at: Date.now() + (data.expires_in - 60) * 1000,
+  }
+
+  return cachedToken.access_token
+}
+
+/**
+ * Extrait l'année depuis une date Spotify
+ * Le format est YYYY, YYYY-MM, ou YYYY-MM-DD selon la précision
+ */
+function extractYear(releaseDate: string): number | null {
+  if (!releaseDate) return null
+  
+  const year = parseInt(releaseDate.substring(0, 4), 10)
+  return isNaN(year) ? null : year
+}
+
+/**
+ * Récupère la meilleure image (la plus grande)
+ */
+function getBestImage(images: SpotifyImage[]): string | null {
+  if (!images || images.length === 0) return null
+  
+  // Les images sont généralement triées par taille décroissante
+  // Mais on s'assure de prendre la plus grande
+  const sorted = [...images].sort((a, b) => (b.height || 0) - (a.height || 0))
+  return sorted[0]?.url || null
 }
 
 /**
  * Recherche des albums sur Spotify
  * @param query - Terme de recherche
  * @param limit - Nombre de résultats (max 50)
+ * @returns Liste d'albums formatés
  */
-export async function searchAlbums(
+export async function searchSpotifyAlbums(
   query: string,
-  limit: number = 10
-): Promise<AlbumSearchResult[]> {
-  if (!query || query.trim().length === 0) {
-    return [];
+  limit: number = 20,
+): Promise<SpotifyAlbumResult[]> {
+  if (!query || query.trim().length < 2) {
+    return []
   }
 
-  try {
-    // Obtenir le token d'accès
-    const token = await getSpotifyAccessToken();
+  const token = await getAccessToken()
 
-    // Encoder la query pour l'URL
-    const encodedQuery = encodeURIComponent(query.trim());
+  const params = new URLSearchParams({
+    q: query.trim(),
+    type: 'album',
+    limit: Math.min(limit, 50).toString(),
+  })
 
-    // Effectuer la recherche
-    const response = await fetch(
-      `https://api.spotify.com/v1/search?type=album&q=${encodedQuery}&limit=${Math.min(limit, 50)}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
+  const response = await fetch(`${SPOTIFY_API_URL}/search?${params}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  })
 
-    if (!response.ok) {
-      throw new Error(`Erreur Spotify API: ${response.status} ${response.statusText}`);
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Token expiré, reset le cache et réessayer
+      cachedToken = null
+      return searchSpotifyAlbums(query, limit)
     }
-
-    const data = await response.json();
-
-    // Parser et formater les résultats
-    const albums: AlbumSearchResult[] = data.albums.items.map((item: SpotifySearchResult) => {
-      // Extraire l'année depuis la date de sortie
-      const year = parseInt(item.release_date.split('-')[0], 10);
-
-      // Prendre la pochette de meilleure qualité (première image)
-      const coverUrl = item.images[0]?.url || '/placeholder-album.png';
-
-      // Extraire les noms des artistes
-      const artist = item.artists.map(a => a.name).join(', ');
-
-      return {
-        spotifyId: item.id,
-        title: item.name,
-        artist,
-        year,
-        coverUrl,
-        spotifyUrl: item.external_urls.spotify,
-      };
-    });
-
-    return albums;
-  } catch (error) {
-    console.error('Erreur lors de la recherche Spotify:', error);
-    throw new Error('Impossible de rechercher des albums sur Spotify');
+    throw new Error('Erreur lors de la recherche Spotify')
   }
+
+  const data: SpotifySearchResponse = await response.json()
+
+  return data.albums.items.map((album) => ({
+    spotifyId: album.id,
+    spotifyUrl: album.external_urls.spotify,
+    title: album.name,
+    artist: album.artists.map((a) => a.name).join(', '),
+    coverUrl: getBestImage(album.images),
+    year: extractYear(album.release_date),
+  }))
 }
 
 /**
- * Obtient les détails d'un album par son ID Spotify
+ * Récupère les détails d'un album Spotify par son ID
  * @param spotifyId - ID Spotify de l'album
+ * @returns Détails de l'album
  */
-export async function getAlbumDetails(spotifyId: string): Promise<AlbumSearchResult> {
-  try {
-    const token = await getSpotifyAccessToken();
+export async function getSpotifyAlbum(spotifyId: string): Promise<SpotifyAlbumResult | null> {
+  if (!spotifyId) return null
 
-    const response = await fetch(
-      `https://api.spotify.com/v1/albums/${spotifyId}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
+  const token = await getAccessToken()
 
-    if (!response.ok) {
-      throw new Error(`Erreur Spotify API: ${response.status} ${response.statusText}`);
+  const response = await fetch(`${SPOTIFY_API_URL}/albums/${spotifyId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    if (response.status === 404) return null
+    if (response.status === 401) {
+      cachedToken = null
+      return getSpotifyAlbum(spotifyId)
     }
+    throw new Error('Erreur lors de la récupération de l\'album Spotify')
+  }
 
-    const item: SpotifySearchResult = await response.json();
+  const album: SpotifyAlbum = await response.json()
 
-    const year = parseInt(item.release_date.split('-')[0], 10);
-    const coverUrl = item.images[0]?.url || '/placeholder-album.png';
-    const artist = item.artists.map(a => a.name).join(', ');
-
-    return {
-      spotifyId: item.id,
-      title: item.name,
-      artist,
-      year,
-      coverUrl,
-      spotifyUrl: item.external_urls.spotify,
-    };
-  } catch (error) {
-    console.error('Erreur lors de la récupération des détails de l\'album:', error);
-    throw new Error('Impossible de récupérer les détails de l\'album');
+  return {
+    spotifyId: album.id,
+    spotifyUrl: album.external_urls.spotify,
+    title: album.name,
+    artist: album.artists.map((a) => a.name).join(', '),
+    coverUrl: getBestImage(album.images),
+    year: extractYear(album.release_date),
   }
 }

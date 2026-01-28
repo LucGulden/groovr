@@ -1,40 +1,43 @@
-import { Timestamp } from 'firebase/firestore';
-import type { Album } from './album';
-import type { User } from './user';
-
 /**
- * Type de post
- */
-export type PostType = 'collection_add' | 'wishlist_add';
-
-/**
- * Post dans Firestore
- * Document dans collection "posts"
- */
-export interface Post {
-  id: string;
-  userId: string;
-  type: PostType;
-  albumId: string; // Référence vers collection "albums"
-  createdAt: Timestamp;
-  likesCount: number;
-  commentsCount: number;
-}
-
-/**
- * Post avec détails de l'album et de l'utilisateur (JOIN)
+ * Post avec tous les détails (user, album, stats)
  * Utilisé pour l'affichage dans le feed
  */
-export interface PostWithDetails extends Post {
-  album: Album; // Détails de l'album
-  user: User; // Détails de l'utilisateur qui a posté
+export interface PostWithDetails {
+  id: string
+  userId: string
+  type: 'collection_add' | 'wishlist_add'
+  createdAt: string
+  likesCount: number
+  commentsCount: number
+  user: {
+    username: string
+    photoURL?: string
+  }
+  album: {
+    title: string
+    artist: string
+    coverUrl: string
+  }
 }
 
 /**
- * Données pour créer un post
+ * Post de base (données brutes de la DB)
  */
-export interface CreatePostData {
-  userId: string;
-  type: PostType;
-  albumId: string;
+export interface Post {
+  id: string
+  user_id: string
+  vinyl_id: string
+  type: 'collection_add' | 'wishlist_add'
+  content?: string
+  created_at: string
+}
+
+/**
+ * Like sur un post
+ */
+export interface PostLike {
+  id: string
+  user_id: string
+  post_id: string
+  created_at: string
 }

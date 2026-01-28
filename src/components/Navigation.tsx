@@ -1,101 +1,94 @@
-'use client';
-
-import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import { useAuth } from './AuthProvider';
-import Avatar from './Avatar';
-import { subscribeToPendingRequests } from '@/lib/follows';
+import { useState, useRef, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
+import Avatar from './Avatar.tsx'
+import { useNotificationsStore } from '../stores/notificationsStore'
+import { getUserByUid } from '../lib/user'
+import type { User as AppUser } from '../types/user'
 
 export default function Navigation() {
-  const { user, signOut, loading } = useAuth();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { user, signOut, loading } = useAuth()
+  const navigate = useNavigate()
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [appUser, setAppUser] = useState<AppUser | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const { unreadCount } = useNotificationsStore()
 
-  // Subscribe aux demandes de follow en attente
+  // Ajouter un useEffect pour charger les données utilisateur
   useEffect(() => {
-    if (!user) {
-      queueMicrotask(() => setPendingRequestsCount(0));
-      return;
+    if (!user) return
+
+    getUserByUid(user.id).then(setAppUser).catch(console.error)
+  }, [user])
+
+  // Écouter les mises à jour du profil
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      if (user) {
+        getUserByUid(user.id).then(setAppUser).catch(console.error)
+      }
     }
 
-    const unsubscribe = subscribeToPendingRequests(
-      user.uid,
-      (requests) => {
-        setPendingRequestsCount(requests.length);
-      },
-      (error) => {
-        console.error('Erreur lors de la souscription aux demandes:', error);
-      }
-    );
+    window.addEventListener('profile-updated', handleProfileUpdate)
+    return () => window.removeEventListener('profile-updated', handleProfileUpdate)
+  }, [user])
 
-    return () => unsubscribe();
-  }, [user]);
 
   // Fermer le dropdown en cliquant en dehors
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
+        setDropdownOpen(false)
       }
-    };
+    }
 
     if (dropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside)
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [dropdownOpen]);
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [dropdownOpen])
 
   const handleSignOut = async () => {
     try {
-      await signOut();
-      setDropdownOpen(false);
+      await signOut()
+      setDropdownOpen(false)
+      navigate('/')
     } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
+      console.error('Erreur lors de la déconnexion:', error)
     }
-  };
+  }
+
+  const username = appUser?.username || user?.user_metadata?.username || user?.email?.split('@')[0] || ''
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--background-lighter)] bg-[var(--background)]/95 backdrop-blur-sm">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold hover:opacity-80">
+        <Link to="/" className="flex items-center gap-2 text-xl font-bold hover:opacity-80">
           <span>🎵</span>
-          <span className="text-[var(--foreground)]">Groovr</span>
+          <span className="text-[var(--foreground)]">FillCrate</span>
         </Link>
 
         {/* Navigation links - Desktop - Affichés seulement si connecté */}
         {user && (
           <div className="hidden items-center gap-6 md:flex">
             <Link
-              href="/feed"
+              to="/feed"
               className="text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
             >
               Feed
             </Link>
             <Link
-              href="/users"
+              to="/search"
               className="text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
             >
               Rechercher
             </Link>
             <Link
-              href="/collection"
-              className="text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
-            >
-              Collection
-            </Link>
-            <Link
-              href="/wishlist"
-              className="text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
-            >
-              Wishlist
-            </Link>
-            <Link
-              href="/requests"
+              to="/notifications"
               className="relative text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -106,9 +99,9 @@ export default function Navigation() {
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                 />
               </svg>
-              {pendingRequestsCount > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                  {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
+                  {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </Link>
@@ -119,7 +112,7 @@ export default function Navigation() {
         <div className="flex items-center gap-4">
           {loading ? (
             // Spinner pendant le chargement
-            <div className="h-8 w-8 animate-pulse rounded-full bg-[var(--background-lighter)]"></div>
+            <div className="h-8 w-8 animate-pulse rounded-full bg-[var(--background-lighter)]" />
           ) : user ? (
             // Utilisateur connecté - Avatar avec dropdown
             <div className="relative" ref={dropdownRef}>
@@ -127,9 +120,9 @@ export default function Navigation() {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center gap-3 rounded-full transition-opacity hover:opacity-80"
               >
-                <Avatar src={user.photoURL} username={user.username} size="md" />
+                <Avatar src={appUser?.photo_url} username={username} size="md" />
                 <span className="hidden text-sm font-medium text-[var(--foreground)] md:block">
-                  {user.username}
+                  {username}
                 </span>
                 <svg
                   className={`h-4 w-4 text-[var(--foreground-muted)] transition-transform ${
@@ -147,7 +140,7 @@ export default function Navigation() {
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-56 rounded-lg border border-[var(--background-lighter)] bg-[var(--background-light)] py-2 shadow-xl">
                   <Link
-                    href={`/profile/${user.username}`}
+                    to={`/profile/${username}`}
                     onClick={() => setDropdownOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 text-[var(--foreground)] hover:bg-[var(--background-lighter)]"
                   >
@@ -163,7 +156,7 @@ export default function Navigation() {
                   </Link>
 
                   <Link
-                    href="/settings"
+                    to="/settings"
                     onClick={() => setDropdownOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 text-[var(--foreground)] hover:bg-[var(--background-lighter)]"
                   >
@@ -184,7 +177,7 @@ export default function Navigation() {
                     Paramètres
                   </Link>
 
-                  <div className="my-1 h-px bg-[var(--background-lighter)]"></div>
+                  <div className="my-1 h-px bg-[var(--background-lighter)]" />
 
                   <button
                     onClick={handleSignOut}
@@ -207,13 +200,13 @@ export default function Navigation() {
             // Utilisateur non connecté
             <>
               <Link
-                href="/login"
+                to="/login"
                 className="hidden text-[var(--foreground-muted)] hover:text-[var(--foreground)] md:block"
               >
                 Connexion
               </Link>
               <Link
-                href="/signup"
+                to="/signup"
                 className="rounded-full bg-[var(--primary)] px-6 py-2 font-medium text-white hover:bg-[#d67118]"
               >
                 Inscription
@@ -223,5 +216,5 @@ export default function Navigation() {
         </div>
       </nav>
     </header>
-  );
+  )
 }

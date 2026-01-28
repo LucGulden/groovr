@@ -1,30 +1,26 @@
-import { Timestamp } from 'firebase/firestore';
-import type { User } from './user';
+/**
+ * Commentaire avec détails utilisateur
+ * Utilisé pour l'affichage dans PostCard
+ */
+export interface CommentWithUser {
+  id: string
+  userId: string
+  postId: string
+  content: string
+  createdAt: string
+  user: {
+    username: string
+    photoURL?: string
+  }
+}
 
 /**
- * Comment dans Firestore
- * Document dans collection "comments"
+ * Commentaire de base (données brutes de la DB)
  */
 export interface Comment {
-  id: string;
-  postId: string;
-  userId: string;
-  text: string;
-  createdAt: Timestamp;
-}
-
-/**
- * Comment avec détails de l'utilisateur (JOIN)
- */
-export interface CommentWithUser extends Comment {
-  user: User;
-}
-
-/**
- * Données pour créer un commentaire
- */
-export interface CreateCommentData {
-  postId: string;
-  userId: string;
-  text: string;
+  id: string
+  user_id: string
+  post_id: string
+  content: string
+  created_at: string
 }
