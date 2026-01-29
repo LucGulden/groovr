@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import VinylGrid from './VinylGrid'
 import AddVinylModal from './AddVinylModal'
 import { useVinylsPagination } from '../hooks/useVinylsPagination'
+import { useVinylStatsStore } from '../stores/vinylStatsStore'
 import { useAuth } from '../hooks/useAuth'
 import type { UserVinylType, Vinyl, Album } from '../types/vinyl'
-import { useEffect } from 'react'
 import Button from './Button'
 
 interface ProfileVinylsProps {
@@ -33,19 +33,20 @@ export default function ProfileVinyls({
     loadMore,
     refresh,
   } = useVinylsPagination({ userId, type })
+  
+  // ✨ Store Zustand pour observer les changements
+  const vinylStatsStore = useVinylStatsStore()
 
   const [selectedVinyl, setSelectedVinyl] = useState<Vinyl | null>(null)
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
+  // ✨ Rafraîchir quand les stats changent
   useEffect(() => {
-    const handleVinylAdded = () => {
+    if (isOwnProfile) {
       refresh()
     }
-
-    window.addEventListener('vinyl-added', handleVinylAdded)
-    return () => window.removeEventListener('vinyl-added', handleVinylAdded)
-  }, [refresh])
+  }, [vinylStatsStore.stats.collectionCount, vinylStatsStore.stats.wishlistCount, isOwnProfile, refresh])
 
   const handleVinylClick = (vinyl: Vinyl, album: Album) => {
     setSelectedVinyl(vinyl)
@@ -62,7 +63,7 @@ export default function ProfileVinyls({
   const handleModalSuccess = () => {
     handleModalClose()
     refresh()
-    window.dispatchEvent(new Event('vinyl-added'))
+    // ✨ Plus besoin de dispatchEvent, le store s'en occupe
   }
 
   // Empty state

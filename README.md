@@ -4,18 +4,83 @@
 
 FillCrate est un réseau social pour passionnés de vinyles : gestion de collection/wishlist, feed social, follows, likes, commentaires, notifications, recherche d'albums et utilisateurs, création d'albums (Spotify ou manuel) et de pressages vinyles.
 
-**Stack** : React 18 + TypeScript + Vite 7 + Supabase + Tailwind CSS + Framer Motion
+**Stack** : React 18 + TypeScript + Vite 7 + Supabase + Tailwind CSS + Framer Motion + Zustand
 
 ## Structure du projet
 ```
 src/
 ├── components/          # Composants UI réutilisables
 ├── pages/               # Pages de l'application
+├── guards/              # Route guards (ProtectedRoute, PublicOnlyRoute, HomeRoute)
 ├── hooks/               # Hooks personnalisés (useAuth, useFeedPagination, useVinylsPagination, useNotifications)
 ├── lib/                 # Fonctions utilitaires (API calls, helpers)
+├── stores/              # State management Zustand
 ├── types/               # Types TypeScript
 └── database/            # Migrations SQL
 ```
+
+## State Management
+
+### Architecture Zustand
+
+Trois stores centralisés gèrent l'état global de l'application :
+
+| Store | Localisation | Responsabilité |
+|-------|--------------|----------------|
+| `notificationsStore` | `/stores/notificationsStore.ts` | Compteur de notifications non lues + subscription temps réel |
+| `userStore` | `/stores/userStore.ts` | Données du profil utilisateur connecté (photo, username, bio) |
+| `vinylStatsStore` | `/stores/vinylStatsStore.ts` | Compteurs collection/wishlist de l'utilisateur connecté |
+
+### Cycle de vie des stores
+
+**Initialisation** : `App.tsx` initialise tous les stores au login :
+```typescript
+useEffect(() => {
+  if (user) {
+    initializeNotifications(user.id)
+    initializeUser(user.id)
+    initializeVinylStats(user.id)
+  } else {
+    cleanupNotifications()
+    cleanupUser()
+    cleanupVinylStats()
+  }
+}, [user])
+```
+
+**Mise à jour** : Les composants appellent les actions du store après mutation DB :
+```typescript
+// Ajout en collection
+await addVinylToUser(userId, vinylId, 'collection')
+incrementCollection()
+
+// Suppression de la wishlist
+await removeVinylFromUser(userId, vinylId, 'wishlist')
+decrementWishlist()
+
+// Déplacement wishlist → collection
+await moveToCollection(userId, vinylId)
+decrementWishlist()
+incrementCollection()
+
+// Modification du profil
+await updateUserProfile(userId, updates)
+updateAppUser(updates)
+```
+
+**Consommation** : Les composants s'abonnent aux stores via hooks :
+```typescript
+const { unreadCount } = useNotificationsStore()
+const { appUser } = useUserStore()
+const { stats } = useVinylStatsStore()
+```
+
+### Pattern de synchronisation
+
+1. Mutation en base de données (Supabase)
+2. Action Zustand pour mettre à jour le state local
+3. Re-render automatique des composants abonnés
+4. Pas d'events custom, pas de props drilling
 
 ### Composants clés
 
@@ -26,7 +91,16 @@ src/
 | `VinylGrid` | Grille avec infinite scroll, utilise VinylCard en mode compact |
 | `VinylDetails` | Détails vinyle avec actions contextuelles selon `targetType` et `isOwnProfile` |
 | `AlbumCard` | Carte album (titre, artiste, année) |
-| `ProfileVinyls` | Affiche collection/wishlist, ouvre modal au clic sur vinyle |
+| `ProfileVinyls` | Affiche collection/wishlist, ouvre modal au clic sur vinyle, écoute `vinylStatsStore` pour rafraîchir |
+| `LoadingSpinner` | Spinner de chargement centralisé avec options fullScreen et taille |
+
+### Guards
+
+| Guard | Rôle |
+|-------|------|
+| `ProtectedRoute` | Bloque l'accès si non connecté → redirect `/` |
+| `PublicOnlyRoute` | Bloque l'accès si connecté → redirect `/` |
+| `HomeRoute` | Route `/` dynamique : Landing si déconnecté, Feed si connecté |
 
 ## Base de données
 
@@ -64,14 +138,27 @@ src/
 - Notifications : follow, like, comment (+ cleanup à la suppression)
 
 ## Routes
+
+### Routes publiques (accessibles déconnecté ET connecté)
 ```
-/                           Landing page
-/signup, /login             Auth
-/feed                       Feed social
+/search                     Recherche albums, artistes, utilisateurs
 /profile/:username          Profil (3 onglets : feed/collection/wishlist)
 /profile/:username/followers|following
+```
+
+### Route dynamique selon auth
+```
+/                           Landing si déconnecté, Feed si connecté
+```
+
+### Routes "public only" (bloquées si connecté)
+```
+/signup, /login             Auth
+```
+
+### Routes protégées (bloquées si déconnecté)
+```
 /notifications              
-/search                     Albums + Utilisateurs
 /settings                   Modification profil
 ```
 
@@ -97,11 +184,11 @@ interface AddVinylModalProps {
 
 | Contexte | Condition | Actions |
 |----------|-----------|---------|
-| Mon profil > Collection | - | "Retirer de ma collection" |
-| Mon profil > Wishlist | - | "J'ai acheté !" + "Retirer de ma wishlist" |
+| Mon profil > Collection | - | "Retirer de ma collection" (decrementCollection) |
+| Mon profil > Wishlist | - | "J'ai acheté !" (decrementWishlist + incrementCollection) + "Retirer de ma wishlist" (decrementWishlist) |
 | Profil autre / Search | En collection | Message "déjà possédé" |
-| Profil autre / Search | En wishlist | "Déplacer vers la collection" |
-| Profil autre / Search | Non possédé | 2 boutons : collection + wishlist |
+| Profil autre / Search | En wishlist | "Déplacer vers la collection" (decrementWishlist + incrementCollection) |
+| Profil autre / Search | Non possédé | 2 boutons : collection (incrementCollection) + wishlist (incrementWishlist) |
 
 ## Types principaux
 ```typescript
@@ -114,13 +201,6 @@ type UserVinylType = 'collection' | 'wishlist';
 ```
 
 ## Patterns et conventions
-
-### Custom Events (synchronisation)
-```typescript
-window.dispatchEvent(new Event('vinyl-added'));    // Rafraîchit les listes
-window.dispatchEvent(new Event('profile-updated')); // Sync Navigation
-window.dispatchEvent(new Event('notifications-read'));
-```
 
 ### Modal avec état initial
 ```typescript
@@ -165,6 +245,8 @@ window.dispatchEvent(new Event('notifications-read'));
 4. **Images** : opacity au lieu de hidden avec lazy loading
 5. **Modal reset** : utiliser `key` pour forcer le remount
 6. **Covers Spotify** : URL stockée directement (pas de copie)
+7. **Route guards** : ProtectedRoute gère le loading centralisé, pas de checks manuels dans les pages
+8. **State management** : Zustand pour état global, pas d'events custom (`window.dispatchEvent`)
 
 ## Style d'interaction préféré
 
@@ -176,4 +258,4 @@ window.dispatchEvent(new Event('notifications-read'));
 
 ---
 
-**Dernière mise à jour** : 25 janvier 2026
+**Dernière mise à jour** : 29 janvier 2026

@@ -10,6 +10,7 @@ import {
   validateUsername,
   validateBio,
 } from '../lib/user'
+import { useUserStore } from '../stores/userStore'
 import type { User } from '../types/user'
 
 interface EditProfileFormProps {
@@ -27,6 +28,7 @@ interface FormData {
 export default function EditProfileForm({ user, onSuccess }: EditProfileFormProps) {
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { updateAppUser } = useUserStore()
 
   const [formData, setFormData] = useState<FormData>({
     username: user.username,
@@ -133,16 +135,19 @@ export default function EditProfileForm({ user, onSuccess }: EditProfileFormProp
         photo_url = await uploadProfilePhoto(user.uid, photoFile)
       }
 
-      // Mise à jour du profil
-      await updateUserProfile(user.uid, {
+      const updates = {
         username: formData.username,
         first_name: formData.first_name || undefined,
         last_name: formData.last_name || undefined,
         bio: formData.bio || undefined,
         photo_url: photo_url || undefined,
-      })
+      }
 
-      window.dispatchEvent(new Event('profile-updated'))
+      // Mise à jour du profil en BDD
+      await updateUserProfile(user.uid, updates)
+
+      // Mise à jour du store Zustand (met à jour la navbar automatiquement)
+      updateAppUser(updates)
 
       // Callback de succès
       if (onSuccess) {

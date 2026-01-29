@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useNotificationsStore } from './stores/notificationsStore'
+import { useUserStore } from './stores/userStore'
+import { useVinylStatsStore } from './stores/vinylStatsStore'
 import Layout from './components/Layout'
 import ProtectedRoute from './guards/ProtectedRoute'
 import PublicOnlyRoute from './guards/PublicOnlyRoute'
@@ -18,18 +20,28 @@ import HomeRoute from './guards/HomeRoute'
 
 function App() {
   const { user } = useAuth()
-  const { initialize, cleanup } = useNotificationsStore()
+  const { initialize: initializeNotifications, cleanup: cleanupNotifications } = useNotificationsStore()
+  const { initialize: initializeUser, cleanup: cleanupUser } = useUserStore()
+  const { initialize: initializeVinylStats, cleanup: cleanupVinylStats } = useVinylStatsStore()
 
-  // Initialiser le store de notifications quand l'utilisateur se connecte
+  // Initialiser les stores quand l'utilisateur se connecte
   useEffect(() => {
     if (user) {
-      initialize(user.id)
+      initializeNotifications(user.id)
+      initializeUser(user.id)
+      initializeVinylStats(user.id)
     } else {
-      cleanup()
+      cleanupNotifications()
+      cleanupUser()
+      cleanupVinylStats()
     }
 
-    return () => cleanup()
-  }, [user, initialize, cleanup])
+    return () => {
+      cleanupNotifications()
+      cleanupUser()
+      cleanupVinylStats()
+    }
+  }, [user, initializeNotifications, cleanupNotifications, initializeUser, cleanupUser, initializeVinylStats, cleanupVinylStats])
 
   return (
     <BrowserRouter>

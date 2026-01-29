@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { hasVinyl, moveToCollection, removeVinylFromUser } from '../lib/vinyls'
+import { useVinylStatsStore } from '../stores/vinylStatsStore'
 import type { Album, Vinyl, UserVinylType } from '../types/vinyl'
 import VinylImage from './VinylImage'
 import Button from './Button'
@@ -28,6 +29,9 @@ export default function VinylDetails({
   const [loading, setLoading] = useState(true)
   const [isMoving, setIsMoving] = useState(false)
   const [isRemoving, setIsRemoving] = useState(false)
+  
+  // ✨ Store Zustand
+  const { incrementCollection, decrementCollection, incrementWishlist, decrementWishlist } = useVinylStatsStore()
 
   const isReissue = album.year !== vinyl.year
 
@@ -67,8 +71,12 @@ export default function VinylDetails({
       await moveToCollection(userId, vinyl.id)
       setInWishlist(false)
       setInCollection(true)
-      window.dispatchEvent(new Event('vinyl-added'))
-      onActionComplete?.()  // Ajouter cette ligne
+      
+      // ✨ Mise à jour du store : -1 wishlist, +1 collection
+      decrementWishlist()
+      incrementCollection()
+      
+      onActionComplete?.()
     } catch (err) {
       console.error('Erreur déplacement:', err)
       alert('Erreur lors du déplacement vers la collection')
@@ -81,13 +89,18 @@ export default function VinylDetails({
     try {
       setIsRemoving(true)
       await removeVinylFromUser(userId, vinyl.id, type)
+      
       if (type === 'collection') {
         setInCollection(false)
+        // ✨ Mise à jour du store : -1 collection
+        decrementCollection()
       } else {
         setInWishlist(false)
+        // ✨ Mise à jour du store : -1 wishlist
+        decrementWishlist()
       }
-      window.dispatchEvent(new Event('vinyl-added'))
-      onActionComplete?.()  // Ajouter cette ligne
+      
+      onActionComplete?.()
     } catch (err) {
       console.error('Erreur suppression:', err)
       alert('Erreur lors de la suppression')

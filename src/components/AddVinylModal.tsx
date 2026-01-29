@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { addVinylToUser } from '../lib/vinyls'
+import { useVinylStatsStore } from '../stores/vinylStatsStore'
 import type { Album, Artist, UserVinylType, Vinyl } from '../types/vinyl'
 import AlbumSearch from './AlbumSearch'
 import VinylSelection from './VinylSelection'
@@ -43,6 +44,8 @@ export default function AddVinylModal({
   const [selectedVinyl, setSelectedVinyl] = useState<Vinyl | null>(initialVinyl || null)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  const { incrementCollection, incrementWishlist } = useVinylStatsStore()
 
   if (!isOpen) return null
 
@@ -76,14 +79,14 @@ export default function AddVinylModal({
 
   const handleBack = () => {
     if (currentStep === 'vinylSelection') {
-      if (initialAlbum) return // Pas de retour si initialAlbum
+      if (initialAlbum) return
       setCurrentStep('albumSearch')
       setSelectedAlbum(null)
-    } else if (currentStep === 'createAlbum') { // Pas de retour si initialStep est 'createAlbum'
+    } else if (currentStep === 'createAlbum') {
       if (initialStep === 'createAlbum') return 
       setCurrentStep('albumSearch')
     } else if (currentStep === 'vinylDetails') {
-      if (initialVinyl) return  // Pas de retour si initialVinyl
+      if (initialVinyl) return
       setCurrentStep('vinylSelection')
       setSelectedVinyl(null)
     } else if (currentStep === 'createVinyl') {
@@ -98,8 +101,13 @@ export default function AddVinylModal({
       setError(null)
       await addVinylToUser(userId, selectedVinyl.id, type)
       setSuccess(true)
+      
+      if (type === 'collection') {
+        incrementCollection()
+      } else {
+        incrementWishlist()
+      }
 
-      // Fermer après un délai
       setTimeout(() => {
         handleSuccessClose()
       }, 1500)
