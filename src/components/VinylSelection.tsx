@@ -68,7 +68,7 @@ export default function VinylSelection({ album, userId, onVinylSelect, onCreateV
       <div className="mb-6 flex items-center gap-4 rounded-lg border border-[var(--background-lighter)] bg-[var(--background-lighter)] p-4">
         <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg">
           <VinylImage
-            src={album.cover_url || ''}
+            src={album.coverUrl || ''}
             alt={`${album.title} par ${album.artist}`}
             className="h-full w-full object-cover"
           />
@@ -142,7 +142,7 @@ export default function VinylSelection({ album, userId, onVinylSelect, onCreateV
                 <VinylCard
                   key={vinyl.id}
                   vinyl={vinyl}
-                  albumCoverUrl={album.cover_url || undefined}
+                  albumCoverUrl={album.coverUrl || undefined}
                   inCollection={status?.inCollection}
                   inWishlist={status?.inWishlist}
                   onClick={() => onVinylSelect(vinyl)}

@@ -268,7 +268,7 @@ export default function VinylDetails({
         {/* Cover */}
         <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-[var(--background-lighter)] bg-[var(--background-lighter)] md:w-[300px]">
           <VinylImage
-            src={vinyl.cover_url || ''}
+            src={vinyl.coverUrl || ''}
             alt={`${vinyl.title} - ${vinyl.artist}`}
             className="h-full w-full object-cover"
           />
@@ -338,7 +338,7 @@ export default function VinylDetails({
             </h4>
             <div className="space-y-2">
               {vinyl.label && <DetailRow label="Label" value={vinyl.label} />}
-              {vinyl.catalog_number && <DetailRow label="Numéro de catalogue" value={vinyl.catalog_number} />}
+              {vinyl.catalogNumber && <DetailRow label="Numéro de catalogue" value={vinyl.catalogNumber} />}
               {vinyl.country && <DetailRow label="Pays" value={vinyl.country} />}
               {vinyl.format && <DetailRow label="Format" value={vinyl.format} />}
             </div>

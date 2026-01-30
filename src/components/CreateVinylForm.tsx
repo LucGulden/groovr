@@ -96,7 +96,7 @@ export default function CreateVinylForm({ album, onVinylCreated, onCancel, userI
         catalogNumber: catalogNumber.trim(),
         country: country.trim(),
         format: format.trim(),
-        coverUrl: album.cover_url, // Par défaut, utiliser la cover de l'album
+        coverUrl: album.coverUrl, // Par défaut, utiliser la cover de l'album
         createdBy: userId,
       })
 
@@ -105,7 +105,7 @@ export default function CreateVinylForm({ album, onVinylCreated, onCancel, userI
         try {
           const coverUrl = await uploadVinylCover(newVinyl.id, customCoverFile)
           await updateVinylCover(newVinyl.id, coverUrl)
-          newVinyl.cover_url = coverUrl
+          newVinyl.coverUrl = coverUrl
         } catch (coverError) {
           console.error('Erreur upload cover custom:', coverError)
         }
@@ -120,7 +120,7 @@ export default function CreateVinylForm({ album, onVinylCreated, onCancel, userI
   }
 
   // Cover à afficher (custom ou album)
-  const displayCover = customCoverPreview || album.cover_url
+  const displayCover = customCoverPreview || album.coverUrl
 
   return (
     <div className="w-full">
@@ -128,7 +128,7 @@ export default function CreateVinylForm({ album, onVinylCreated, onCancel, userI
       <div className="mb-6 flex items-center gap-4 rounded-lg border border-[var(--background-lighter)] bg-[var(--background-lighter)] p-4">
         <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg">
           <VinylImage
-            src={album.cover_url || ''}
+            src={album.coverUrl || ''}
             alt={`${album.title} par ${album.artist}`}
             className="h-full w-full object-cover"
           />

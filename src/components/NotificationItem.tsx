@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Avatar from './Avatar'
 import VinylImage from './VinylImage'
-import { getRelativeTimeString } from '../lib/date-utils'
+import { getRelativeTimeString } from '../utils/date-utils'
 import type { NotificationWithDetails } from '../types/notification'
 
 interface NotificationItemProps {
@@ -12,12 +12,12 @@ interface NotificationItemProps {
 export default function NotificationItem({ 
   notification,
 }: NotificationItemProps) {
-  const { actor, type, read, created_at, post, comment } = notification
+  const { actor, type, read, createdAt, post, comment } = notification
 
   // Générer le message selon le type
   const getMessage = () => {
-    const actorName = actor.first_name && actor.last_name 
-      ? `${actor.first_name} ${actor.last_name}`
+    const actorName = actor.firstName && actor.lastName 
+      ? `${actor.firstName} ${actor.lastName}`
       : `@${actor.username}`
 
     switch (type) {
@@ -77,7 +77,7 @@ export default function NotificationItem({
         <div className="flex items-start gap-3">
           {/* Avatar de l'acteur */}
           <Avatar
-            src={actor.photo_url}
+            src={actor.photoUrl}
             username={actor.username}
             size="md"
           />
@@ -90,7 +90,7 @@ export default function NotificationItem({
                   {getMessage()}
                 </div>
                 <div className="text-xs text-foreground-muted mt-1">
-                  {getRelativeTimeString(created_at)}
+                  {getRelativeTimeString(createdAt)}
                 </div>
               </div>
 
@@ -102,10 +102,10 @@ export default function NotificationItem({
           </div>
 
           {/* Aperçu du vinyle (pour post_like et post_comment) */}
-          {(type === 'post_like' || type === 'post_comment') && post?.vinyl && post.vinyl.cover_url && (
+          {(type === 'post_like' || type === 'post_comment') && post?.vinyl && post.vinyl.coverUrl && (
             <div className="w-12 h-12 flex-shrink-0">
               <VinylImage
-                src={post.vinyl.cover_url}
+                src={post.vinyl.coverUrl}
                 alt={`${post.vinyl.artist} - ${post.vinyl.title}`}
                 className="rounded"
               />

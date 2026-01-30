@@ -107,7 +107,7 @@ export default function VinylGrid({
           <VinylCard
             key={userVinyl.id}
             vinyl={userVinyl.vinyl}
-            albumCoverUrl={userVinyl.album?.cover_url}
+            albumCoverUrl={userVinyl.album?.coverUrl}
             onClick={() => onVinylClick(userVinyl.vinyl, userVinyl.album)}
             variant="compact"
           />

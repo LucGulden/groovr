@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient'
+import { toCamelCase, toSnakeCase } from '../utils/caseConverter'
 import type { Album, Vinyl, UserVinyl, UserVinylWithDetails, UserVinylType, Artist } from '../types/vinyl'
 
 const ITEMS_PER_PAGE = 20
@@ -47,7 +48,7 @@ export async function getUserVinyls(
     throw new Error(`Erreur lors de la récupération des vinyles: ${error.message}`)
   }
 
-  // Transformer la structure pour avoir album au même niveau que vinyl
+  // Transformer et convertir en camelCase
   return (data || []).map((item: any) => {
     // Extraire les artistes du vinyle
     const vinylArtists = item.vinyl?.vinyl_artists?.map((va: any) => va.artist?.name).filter(Boolean) || []
@@ -65,12 +66,12 @@ export async function getUserVinyls(
       album_artists: undefined,
     } : null
 
-    return {
+    return toCamelCase<UserVinylWithDetails>({
       ...item,
       vinyl,
       album,
-    }
-  }) as UserVinylWithDetails[]
+    })
+  })
 }
 
 /**
@@ -130,13 +131,16 @@ export async function addVinylToUser(
     throw new Error(`Ce vinyle est déjà dans votre ${type === 'collection' ? 'collection' : 'wishlist'}`)
   }
 
+  // Convertir en snake_case pour la BDD
+  const dbData = toSnakeCase({
+    userId,
+    releaseId: vinylId,
+    type,
+  })
+
   const { data, error } = await supabase
     .from('user_vinyls')
-    .insert({
-      user_id: userId,
-      release_id: vinylId,
-      type,
-    })
+    .insert(dbData)
     .select()
     .single()
 
@@ -144,7 +148,7 @@ export async function addVinylToUser(
     throw new Error(`Erreur lors de l'ajout: ${error.message}`)
   }
 
-  return data as UserVinyl
+  return toCamelCase<UserVinyl>(data)
 }
 
 /**
@@ -292,7 +296,7 @@ export async function searchAlbums(
     }
   })
 
-  return transformedAlbums.slice(0, limit)
+  return transformedAlbums.slice(0, limit).map(album => toCamelCase<Album>(album))
 }
 
 /**
@@ -317,12 +321,12 @@ export async function getVinylsByAlbum(albumId: string): Promise<Vinyl[]> {
   // Transformer pour extraire les artistes
   return (data || []).map((vinyl: any) => {
     const artists = vinyl.vinyl_artists?.map((va: any) => va.artist?.name).filter(Boolean) || []
-    return {
+    return toCamelCase<Vinyl>({
       ...vinyl,
       artist: artists.join(', ') || 'Artiste inconnu',
       vinyl_artists: undefined,
-    }
-  }) as Vinyl[]
+    })
+  })
 }
 
 
@@ -340,18 +344,20 @@ export interface CreateAlbumInput {
 }
 
 export async function createAlbum(input: CreateAlbumInput): Promise<Album> {
-  // Appeler la fonction RPC qui gère artiste + album + relation
+  // Convertir en snake_case pour la RPC
+  const dbParams = {
+    p_title: input.title,
+    p_artist_name: input.artist,
+    p_year: input.year,
+    p_cover_url: input.coverUrl,
+    p_spotify_id: input.spotifyId || null,
+    p_spotify_url: input.spotifyUrl || null,
+    p_created_by: input.createdBy,
+  }
+
   const { data: albumId, error: rpcError } = await supabase.rpc(
     'create_album_with_artist',
-    {
-      p_title: input.title,
-      p_artist_name: input.artist,
-      p_year: input.year,
-      p_cover_url: input.coverUrl,
-      p_spotify_id: input.spotifyId || null,
-      p_spotify_url: input.spotifyUrl || null,
-      p_created_by: input.createdBy,
-    },
+    dbParams,
   )
 
   if (rpcError) {
@@ -376,11 +382,11 @@ export async function createAlbum(input: CreateAlbumInput): Promise<Album> {
 
   // Transformer pour avoir le champ artist
   const artists = album.album_artists?.map((aa: any) => aa.artist?.name).filter(Boolean) || []
-  return {
+  return toCamelCase<Album>({
     ...album,
     artist: artists.join(', ') || 'Artiste inconnu',
     album_artists: undefined,
-  } as Album
+  })
 }
 
 /**
@@ -401,7 +407,7 @@ export async function getAlbumBySpotifyId(spotifyId: string): Promise<Album | nu
     throw new Error(`Erreur lors de la recherche: ${error.message}`)
   }
 
-  return data as Album
+  return toCamelCase<Album>(data)
 }
 
 /**
@@ -421,21 +427,23 @@ export interface CreateVinylInput {
 }
 
 export async function createVinyl(input: CreateVinylInput): Promise<Vinyl> {
-  // Appeler la fonction RPC qui gère artiste + vinyle + relation
+  // Convertir en snake_case pour la RPC
+  const dbParams = {
+    p_album_id: input.albumId,
+    p_title: input.title,
+    p_artist_name: input.artist,
+    p_year: input.year,
+    p_label: input.label,
+    p_catalog_number: input.catalogNumber,
+    p_country: input.country,
+    p_format: input.format,
+    p_cover_url: input.coverUrl,
+    p_created_by: input.createdBy,
+  }
+
   const { data: vinylId, error: rpcError } = await supabase.rpc(
     'create_vinyl_with_artist',
-    {
-      p_album_id: input.albumId,
-      p_title: input.title,
-      p_artist_name: input.artist,
-      p_year: input.year,
-      p_label: input.label,
-      p_catalog_number: input.catalogNumber,
-      p_country: input.country,
-      p_format: input.format,
-      p_cover_url: input.coverUrl,
-      p_created_by: input.createdBy,
-    },
+    dbParams,
   )
 
   if (rpcError) {
@@ -460,11 +468,11 @@ export async function createVinyl(input: CreateVinylInput): Promise<Vinyl> {
 
   // Transformer pour avoir le champ artist
   const artists = vinyl.vinyl_artists?.map((va: any) => va.artist?.name).filter(Boolean) || []
-  return {
+  return toCamelCase<Vinyl>({
     ...vinyl,
     artist: artists.join(', ') || 'Artiste inconnu',
     vinyl_artists: undefined,
-  } as Vinyl
+  })
 }
 
 /**
@@ -519,7 +527,7 @@ export async function searchArtists(
     throw new Error(`Erreur lors de la recherche d'artistes: ${error.message}`)
   }
 
-  return data as Artist[]
+  return toCamelCase<Artist[]>(data)
 }
 
 /**
@@ -547,11 +555,11 @@ export async function getAlbumsByArtist(artistId: string): Promise<Album[]> {
     .map((item: any) => {
       if (!item.album) return null
       const artists = item.album.album_artists?.map((aa: any) => aa.artist?.name).filter(Boolean) || []
-      return {
+      return toCamelCase<Album>({
         ...item.album,
         artist: artists.join(', ') || 'Artiste inconnu',
         album_artists: undefined,
-      }
+      })
     })
     .filter(Boolean) as Album[]
 }

@@ -5,7 +5,7 @@ import { likePost, unlikePost, hasLikedPost } from '../lib/posts'
 import { addComment, subscribeToPostComments } from '../lib/comments'
 import type { PostWithDetails } from '../types/post'
 import type { CommentWithUser } from '../types/comment'
-import { getRelativeTimeString } from '../lib/date-utils'
+import { getRelativeTimeString } from '../utils/date-utils'
 import CommentItem from './CommentItem'
 import Button from './Button'
 

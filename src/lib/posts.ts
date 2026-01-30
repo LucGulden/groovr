@@ -1,16 +1,19 @@
 import { supabase } from '../supabaseClient'
+import { toCamelCase, toSnakeCase } from '../utils/caseConverter'
 import type { PostWithDetails } from '../types/post'
 
 /**
  * Ajouter un like à un post
  */
 export async function likePost(userId: string, postId: string): Promise<void> {
+  const dbData = toSnakeCase({
+    userId,
+    postId,
+  })
+
   const { error } = await supabase
     .from('post_likes')
-    .insert({
-      user_id: userId,
-      post_id: postId,
-    })
+    .insert(dbData)
 
   if (error) {
     console.error('Erreur lors du like:', error)

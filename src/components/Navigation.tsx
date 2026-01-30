@@ -44,7 +44,7 @@ export default function Navigation() {
     }
   }
 
-  const username = appUser?.username || user?.user_metadata?.username || user?.email?.split('@')[0] || ''
+  const username = appUser?.username || user?.userMetadata?.username || user?.email?.split('@')[0] || ''
 
   const isActive = (path: string) => location.pathname === path
 
@@ -157,7 +157,7 @@ export default function Navigation() {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center gap-3 rounded-full transition-opacity hover:opacity-80"
                 >
-                  <Avatar src={appUser?.photo_url} username={username} size="md" />
+                  <Avatar src={appUser?.photoUrl} username={username} size="md" />
                   <span className="hidden text-sm font-medium text-[var(--foreground)] lg:block">
                     {username}
                   </span>
@@ -332,7 +332,7 @@ export default function Navigation() {
                     : 'text-[var(--foreground-muted)]'
                 }`}
               >
-                <Avatar src={appUser?.photo_url} username={username} size="sm" />
+                <Avatar src={appUser?.photoUrl} username={username} size="sm" />
                 <span className="text-xs font-medium">Profil</span>
               </button>
 

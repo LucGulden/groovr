@@ -76,9 +76,9 @@ export default function ArtistCard({ artist, onClick }: ArtistCardProps) {
       className="group text-left transition-transform hover:scale-105"
     >
       <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-[var(--background-lighter)] bg-[var(--background-lighter)]">
-        {artist.image_url ? (
+        {artist.imageUrl ? (
           <img
-            src={artist.image_url}
+            src={artist.imageUrl}
             alt={artist.name}
             loading="lazy"
             className="h-full w-full object-cover"

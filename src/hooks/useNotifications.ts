@@ -47,7 +47,7 @@ export function useNotifications(userId: string): UseNotificationsReturn {
       const data = await getNotifications(
         userId,
         LIMIT,
-        lastNotification?.created_at,
+        lastNotification?.createdAt,
       )
 
       if (reset) {

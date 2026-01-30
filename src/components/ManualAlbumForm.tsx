@@ -57,7 +57,7 @@ export default function ManualAlbumForm({ onAlbumCreated, onBack, userId }: Manu
       if (coverFile) {
         const coverUrl = await uploadAlbumCover(newAlbum.id, coverFile)
         await updateAlbumCover(newAlbum.id, coverUrl)
-        newAlbum.cover_url = coverUrl
+        newAlbum.coverUrl = coverUrl
       }
 
       onAlbumCreated(newAlbum)

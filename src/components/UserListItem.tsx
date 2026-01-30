@@ -21,7 +21,7 @@ export default function UserListItem({
   const [following, setFollowing] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ')
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ')
   const isOwnProfile = currentUser?.id === user.uid
 
   // Vérifier si on suit déjà cet utilisateur
@@ -73,7 +73,7 @@ export default function UserListItem({
       >
         {/* Avatar */}
         <Avatar
-          src={user.photo_url}
+          src={user.photoUrl}
           username={user.username}
           size="md"
         />

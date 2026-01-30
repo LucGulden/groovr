@@ -13,14 +13,3 @@ export interface CommentWithUser {
     photoURL?: string
   }
 }
-
-/**
- * Commentaire de base (données brutes de la DB)
- */
-export interface Comment {
-  id: string
-  user_id: string
-  post_id: string
-  content: string
-  created_at: string
-}

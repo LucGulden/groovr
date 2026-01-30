@@ -14,7 +14,7 @@ export default function AlbumCard({ album, onClick }: AlbumCardProps) {
     >
       <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-[var(--background-lighter)] bg-[var(--background-lighter)]">
         <VinylImage
-          src={album.cover_url || ''}
+          src={album.coverUrl || ''}
           alt={`${album.title} par ${album.artist}`}
           className="h-full w-full object-cover transition-transform"
         />

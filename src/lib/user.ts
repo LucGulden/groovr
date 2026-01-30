@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient'
+import { toCamelCase, toSnakeCase } from '../utils/caseConverter'
 import type { User } from '../types/user'
 
 export function validateUsername(username: string): boolean {
@@ -84,10 +85,10 @@ export async function updateUserProfile(
   userId: string,
   data: {
     username?: string;
-    first_name?: string;
-    last_name?: string;
+    firstName?: string;
+    lastName?: string;
     bio?: string;
-    photo_url?: string;
+    photoUrl?: string;
   },
 ): Promise<void> {
   // Filtrer les valeurs undefined
@@ -95,9 +96,12 @@ export async function updateUserProfile(
     Object.entries(data).filter(([, value]) => value !== undefined),
   )
 
+  // Convertir en snake_case pour la BDD
+  const dbData = toSnakeCase(cleanData)
+
   const { error } = await supabase
     .from('users')
-    .update(cleanData)
+    .update(dbData)
     .eq('uid', userId)
 
   if (error) {
@@ -119,7 +123,8 @@ export async function getUserByUid(uid: string): Promise<User | null> {
       return null
     }
 
-    return data as User
+    // Convertir en camelCase
+    return toCamelCase<User>(data)
   } catch (err) {
     console.error('Erreur inattendue:', err)
     return null

@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient'
+import { toCamelCase, toSnakeCase } from '../utils/caseConverter'
 
 /**
  * Récupérer les statistiques de follow d'un utilisateur
@@ -50,11 +51,14 @@ export async function followUser(
   followerId: string,
   followingId: string,
 ): Promise<void> {
-  const { error } = await supabase.from('follows').insert({
-    follower_id: followerId,
-    following_id: followingId,
+  // Convertir en snake_case pour la BDD
+  const dbData = toSnakeCase({
+    followerId,
+    followingId,
     status: 'active',
   })
+
+  const { error } = await supabase.from('follows').insert(dbData)
 
   if (error) {
     console.error('Erreur lors du follow:', error)
@@ -114,9 +118,7 @@ export async function isFollowing(
 export async function getFollowers(userId: string) {
   const { data, error } = await supabase
     .from('follows')
-    .select(`
-      follower_id
-    `)
+    .select('follower_id')
     .eq('following_id', userId)
     .eq('status', 'active')
     .order('created_at', { ascending: false })
@@ -144,7 +146,8 @@ export async function getFollowers(userId: string) {
     throw usersError
   }
 
-  return users || []
+  // Convertir en camelCase
+  return toCamelCase(users || [])
 }
 
 /**
@@ -153,9 +156,7 @@ export async function getFollowers(userId: string) {
 export async function getFollowing(userId: string) {
   const { data, error } = await supabase
     .from('follows')
-    .select(`
-      following_id
-    `)
+    .select('following_id')
     .eq('follower_id', userId)
     .eq('status', 'active')
     .order('created_at', { ascending: false })
@@ -183,5 +184,6 @@ export async function getFollowing(userId: string) {
     throw usersError
   }
 
-  return users || []
+  // Convertir en camelCase
+  return toCamelCase(users || [])
 }

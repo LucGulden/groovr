@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
+import { toCamelCase } from '../utils/caseConverter'
 import type { PostWithDetails } from '../types/post'
 import { getFeedPosts } from '../lib/posts'
 
 const INITIAL_LOAD_COUNT = 15
 const LOAD_MORE_COUNT = 10
-
 
 export interface UseFeedPaginationReturn {
   posts: PostWithDetails[]
@@ -132,12 +132,15 @@ export function useFeedPagination(userId: string, profileFeed: boolean): UseFeed
           table: 'posts',
         },
         async (payload) => {
-          // Vérifier que le post est plus récent que le plus récent actuel
-          const newPost = payload.new as any
+          // ⚠️ Les données Realtime arrivent en snake_case depuis Supabase
+          const newPostRaw = payload.new as any
           
-          if (newPost.created_at > newestPostTime) {
+          // Convertir en camelCase pour comparer avec nos données
+          const newPost = toCamelCase(newPostRaw)
+          
+          if (newPost.createdAt > newestPostTime) {
             // Vérifier si ce post doit être inclus dans le feed
-            const shouldInclude = await shouldIncludePost(newPost.user_id)
+            const shouldInclude = await shouldIncludePost(newPost.userId)
             
             if (shouldInclude) {
               // Incrémenter le compteur de nouveaux posts

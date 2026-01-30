@@ -4,13 +4,13 @@ export type NotificationType = 'new_follower' | 'post_like' | 'post_comment';
 
 export interface Notification {
   id: string;
-  user_id: string;
+  userId: string;
   type: NotificationType;
-  actor_id: string;
-  post_id: string | null;
-  comment_id: string | null;
+  actorId: string;
+  postId: string | null;
+  commentId: string | null;
   read: boolean;
-  created_at: string;
+  createdAt: string;
 }
 
 // Interface enrichie avec les détails de l'acteur (utilisateur qui a déclenché la notification)
@@ -18,20 +18,20 @@ export interface NotificationWithDetails extends Notification {
   actor: {
     uid: string;
     username: string;
-    first_name: string | null;
-    last_name: string | null;
-    photo_url: string | null;
+    firstName: string | null;
+    lastName: string | null;
+    photoUrl: string | null;
   };
   // Détails optionnels du post (pour post_like et post_comment)
   post?: {
     id: string;
-    vinyl_id: string;
+    vinylId: string;
     content: string | null;
     vinyl: {
       id: string;
       title: string;
       artist: string;
-      cover_url: string | null;
+      coverUrl: string | null;
     };
   };
   // Détails optionnels du commentaire (pour post_comment)
@@ -43,9 +43,9 @@ export interface NotificationWithDetails extends Notification {
 
 // Type pour la création d'une notification
 export interface CreateNotificationParams {
-  user_id: string;
+userId: string;
   type: NotificationType;
-  actor_id: string;
-  post_id?: string;
-  comment_id?: string;
+  actorId: string;
+  postId?: string;
+  commentId?: string;
 }

@@ -30,7 +30,7 @@ export default function ProfileHeader({
   const [following, setFollowing] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ')
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ')
 
   // Vérifier si on suit déjà cet utilisateur
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function ProfileHeader({
         {/* Avatar - Overlay at bottom */}
         <div className="absolute -bottom-12 left-6 sm:-bottom-16 sm:left-8">
           <Avatar
-            src={user.photo_url}
+            src={user.photoUrl}
             username={user.username}
             size="xl"
             className="border-4 border-[var(--background)] ring-2 ring-[var(--primary)]"

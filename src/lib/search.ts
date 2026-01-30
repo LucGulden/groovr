@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient'
+import { toCamelCase } from '../utils/caseConverter'
 import type { User } from '../types/user'
 
 /**
@@ -31,5 +32,6 @@ export async function searchUsers(
     throw error
   }
 
-  return data || []
+  // Convertir en camelCase
+  return toCamelCase<User[]>(data || [])
 }

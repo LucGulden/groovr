@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Avatar from './Avatar'
 import Input from './Input'
 import Button from './Button'
-import { uploadProfilePhoto, generateImagePreview } from '../lib/storage'
+import { uploadProfilePhoto, generateImagePreview } from '../lib/avatars'
 import {
   updateUserProfile,
   checkUsernameAvailability,
@@ -20,8 +20,8 @@ interface EditProfileFormProps {
 
 interface FormData {
   username: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   bio: string;
 }
 
@@ -32,13 +32,13 @@ export default function EditProfileForm({ user, onSuccess }: EditProfileFormProp
 
   const [formData, setFormData] = useState<FormData>({
     username: user.username,
-    first_name: user.first_name || '',
-    last_name: user.last_name || '',
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
     bio: user.bio || '',
   })
 
   const [photoFile, setPhotoFile] = useState<File | null>(null)
-  const [photoPreview, setPhotoPreview] = useState<string | null>(user.photo_url || null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(user.photoUrl || null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [checkingUsername, setCheckingUsername] = useState(false)
@@ -128,19 +128,19 @@ export default function EditProfileForm({ user, onSuccess }: EditProfileFormProp
     try {
       setLoading(true)
 
-      let photo_url = user.photo_url
+      let photoUrl = user.photoUrl
 
       // Upload de la nouvelle photo si sélectionnée
       if (photoFile) {
-        photo_url = await uploadProfilePhoto(user.uid, photoFile)
+        photoUrl = await uploadProfilePhoto(user.uid, photoFile)
       }
 
       const updates = {
         username: formData.username,
-        first_name: formData.first_name || undefined,
-        last_name: formData.last_name || undefined,
+        firstName: formData.firstName || undefined,
+        lastName: formData.lastName || undefined,
         bio: formData.bio || undefined,
-        photo_url: photo_url || undefined,
+        photoUrl: photoUrl || undefined,
       }
 
       // Mise à jour du profil en BDD
@@ -246,8 +246,8 @@ export default function EditProfileForm({ user, onSuccess }: EditProfileFormProp
       <Input
         label="Prénom (optionnel)"
         type="text"
-        name="first_name"
-        value={formData.first_name}
+        name="firstName"
+        value={formData.firstName}
         onChange={handleChange}
         disabled={loading}
       />
@@ -256,8 +256,8 @@ export default function EditProfileForm({ user, onSuccess }: EditProfileFormProp
       <Input
         label="Nom (optionnel)"
         type="text"
-        name="last_name"
-        value={formData.last_name}
+        name="lastName"
+        value={formData.lastName}
         onChange={handleChange}
         disabled={loading}
       />

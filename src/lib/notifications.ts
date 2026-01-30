@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient'
+import { toCamelCase, toSnakeCase } from '../utils/caseConverter'
 import type { 
   Notification, 
   NotificationWithDetails, 
@@ -87,8 +88,8 @@ export async function getNotifications(
       }
     }
 
-    return item
-  }) as NotificationWithDetails[]
+    return toCamelCase<NotificationWithDetails>(item)
+  })
 }
 
 /**
@@ -132,15 +133,12 @@ export async function markAllAsRead(userId: string): Promise<void> {
 export async function createNotification(
   params: CreateNotificationParams,
 ): Promise<Notification | null> {
+  // Convertir en snake_case pour la BDD
+  const dbData = toSnakeCase(params)
+
   const { data, error } = await supabase
     .from('notifications')
-    .insert({
-      user_id: params.user_id,
-      type: params.type,
-      actor_id: params.actor_id,
-      post_id: params.post_id || null,
-      comment_id: params.comment_id || null,
-    })
+    .insert(dbData)
     .select()
     .single()
 
@@ -154,7 +152,7 @@ export async function createNotification(
     throw error
   }
 
-  return data as Notification
+  return toCamelCase<Notification>(data)
 }
 
 /**
@@ -176,10 +174,10 @@ export function subscribeToNotifications(
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
-        onNotification(payload.new as Notification)
+        onNotification(toCamelCase<Notification>(payload.new))
       },
     )
-    .subscribe((status, err) => {  // ← Ajouter le paramètre err
+    .subscribe((status, err) => {
       if (status === 'SUBSCRIBED') {
         console.log('✅ Subscribed to notifications')
       } else if (status === 'CHANNEL_ERROR') {

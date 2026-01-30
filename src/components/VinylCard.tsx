@@ -52,7 +52,7 @@ export default function VinylCard({
       {/* Cover */}
       <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-[var(--background-lighter)] bg-[var(--background-lighter)]">
         <VinylImage
-          src={vinyl.cover_url || albumCoverUrl || ''}
+          src={vinyl.coverUrl || albumCoverUrl || ''}
           alt={`${vinyl.title} par ${vinyl.artist}`}
           className="h-full w-full object-cover transition-transform"
         />
@@ -76,7 +76,7 @@ export default function VinylCard({
             </span>
           </div>
           <p className="mt-1 truncate text-xs text-[var(--foreground-muted)]">
-            {vinyl.label} – {vinyl.catalog_number}
+            {vinyl.label} – {vinyl.catalogNumber}
           </p>
         </div>
       ) : (

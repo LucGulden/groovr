@@ -64,7 +64,7 @@ export function useVinylsPagination({
 
     try {
       const lastVinyl = vinyls[vinyls.length - 1]
-      const lastAddedAt = lastVinyl?.added_at
+      const lastAddedAt = lastVinyl?.addedAt
 
       const moreVinyls = await getUserVinyls(userId, type, pageSize, lastAddedAt)
 
@@ -84,7 +84,7 @@ export function useVinylsPagination({
 
   // Retirer un vinyle de la liste (optimistic update)
   const removeVinylFromList = useCallback((vinylId: string) => {
-    setVinyls((prev) => prev.filter((v) => v.release_id !== vinylId))
+    setVinyls((prev) => prev.filter((v) => v.releaseId !== vinylId))
     setTotal((prev) => Math.max(0, prev - 1))
   }, [])
 
