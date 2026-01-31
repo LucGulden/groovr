@@ -1,11 +1,8 @@
-import Image from 'next/image';
-import React, { useState } from 'react';
-
 interface AvatarProps {
-  src?: string | null;
-  username: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  className?: string;
+  src?: string | null
+  username: string
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  className?: string
 }
 
 /**
@@ -21,63 +18,58 @@ function getColorFromUsername(username: string): string {
     '#9b59b6', // Violet
     '#f39c12', // Jaune orangé
     '#1abc9c', // Turquoise
-  ];
+  ]
 
   // Générer un index basé sur le username
-  let hash = 0;
+  let hash = 0
   for (let i = 0; i < username.length; i++) {
-    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+    hash = username.charCodeAt(i) + ((hash << 5) - hash)
   }
-  const index = Math.abs(hash) % colors.length;
+  const index = Math.abs(hash) % colors.length
 
-  return colors[index];
+  return colors[index]
 }
 
 /**
  * Extrait les initiales du username
  */
 function getInitials(username: string): string {
-  if (!username) return '?';
+  if (!username) return '?'
 
   // Prendre les 2 premiers caractères du username
-  return username.substring(0, 2).toUpperCase();
+  return username.substring(0, 2).toUpperCase()
 }
 
 export default function Avatar({ src, username, size = 'md', className = '' }: AvatarProps) {
-  const [imageLoaded, setImageLoaded] = useState(false);
-
   const sizeClasses = {
     sm: 'h-8 w-8 text-xs',
     md: 'h-10 w-10 text-sm',
     lg: 'h-16 w-16 text-xl',
     xl: 'h-24 w-24 text-3xl',
-  };
+  }
 
-  const backgroundColor = getColorFromUsername(username);
-  const initials = getInitials(username);
+  const sizePx = {
+    sm: 32,
+    md: 40,
+    lg: 64,
+    xl: 96,
+  }
+
+  const backgroundColor = getColorFromUsername(username)
+  const initials = getInitials(username)
 
   if (src) {
     return (
-      <div className="relative">
-        {/* Shimmer placeholder */}
-        {!imageLoaded && (
-          <div className={`${sizeClasses[size]} rounded-full border-2 border-[var(--primary)] overflow-hidden ${className}`}>
-            <div className="h-full w-full animate-pulse bg-gradient-to-r from-[var(--background-lighter)] via-[var(--background)] to-[var(--background-lighter)]">
-              <div className="h-full w-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-            </div>
-          </div>
-        )}
-
-        <Image
+      <div className={`relative ${sizeClasses[size]}`}>
+        <img
           src={src}
           alt={username}
-          className={`${sizeClasses[size]} rounded-full border-2 border-[var(--primary)] object-cover transition-opacity duration-300 ${
-            imageLoaded ? 'opacity-100' : 'opacity-0 absolute top-0 left-0'
-          } ${className}`}
-          onLoad={() => setImageLoaded(true)}
+          width={sizePx[size]}
+          height={sizePx[size]}
+          className={`rounded-full border-2 border-[var(--primary)] object-cover ${sizeClasses[size]} ${className}`}
         />
       </div>
-    );
+    )
   }
 
   return (
@@ -87,5 +79,5 @@ export default function Avatar({ src, username, size = 'md', className = '' }: A
     >
       {initials}
     </div>
-  );
+  )
 }

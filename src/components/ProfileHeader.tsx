@@ -1,8 +1,17 @@
-import React from 'react';
-import Link from 'next/link';
-import Avatar from './Avatar';
-import FollowButton from './FollowButton';
-import type { User, ProfileStats } from '@/types/user';
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import Avatar from './Avatar'
+import Button from './Button'
+import { followUser, unfollowUser, isFollowing } from '../lib/follows'
+import { useAuth } from '../hooks/useAuth'
+import { type User } from '../types/user'
+
+interface ProfileStats {
+  releasesCount: number;
+  wishlistCount?: number;
+  followersCount: number;
+  followingCount: number;
+}
 
 interface ProfileHeaderProps {
   user: User;
@@ -17,7 +26,51 @@ export default function ProfileHeader({
   isOwnProfile,
   onFollowChange,
 }: ProfileHeaderProps) {
-  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+  const { user: currentUser } = useAuth()
+  const [following, setFollowing] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ')
+
+  // Vérifier si on suit déjà cet utilisateur
+  useEffect(() => {
+    if (!currentUser || isOwnProfile) return
+
+    const checkFollowing = async () => {
+      try {
+        const result = await isFollowing(currentUser.id, user.uid)
+        setFollowing(result)
+      } catch (error) {
+        console.error('Erreur lors de la vérification du follow:', error)
+      }
+    }
+
+    checkFollowing()
+  }, [currentUser, user.uid, isOwnProfile])
+
+  // Gérer le follow/unfollow
+  const handleFollowToggle = async () => {
+    if (!currentUser) return
+
+    try {
+      setLoading(true)
+      
+      if (following) {
+        await unfollowUser(currentUser.id, user.uid)
+        setFollowing(false)
+      } else {
+        await followUser(currentUser.id, user.uid)
+        setFollowing(true)
+      }
+
+      // Notifier le parent pour rafraîchir les stats
+      onFollowChange?.()
+    } catch (error) {
+      console.error('Erreur lors du follow/unfollow:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="w-full">
@@ -26,7 +79,7 @@ export default function ProfileHeader({
         {/* Avatar - Overlay at bottom */}
         <div className="absolute -bottom-12 left-6 sm:-bottom-16 sm:left-8">
           <Avatar
-            src={user.photoURL}
+            src={user.photoUrl}
             username={user.username}
             size="xl"
             className="border-4 border-[var(--background)] ring-2 ring-[var(--primary)]"
@@ -43,18 +96,6 @@ export default function ProfileHeader({
               <h1 className="text-2xl font-bold text-[var(--foreground)] sm:text-3xl">
                 {user.username}
               </h1>
-              {user.isPrivate && (
-                <span className="flex items-center gap-1 rounded-full bg-[var(--background-lighter)] px-3 py-1 text-xs font-medium text-[var(--foreground-muted)]">
-                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Privé
-                </span>
-              )}
             </div>
 
             {fullName && (
@@ -69,12 +110,20 @@ export default function ProfileHeader({
             <div className="flex gap-6">
               <div>
                 <span className="text-xl font-bold text-[var(--foreground)]">
-                  {stats.albumsCount}
+                  {stats.releasesCount}
                 </span>
-                <span className="ml-1 text-sm text-[var(--foreground-muted)]">albums</span>
+                <span className="ml-1 text-sm text-[var(--foreground-muted)]">vinyles</span>
               </div>
+              {stats.wishlistCount !== undefined && (
+                <div>
+                  <span className="text-xl font-bold text-[var(--foreground)]">
+                    {stats.wishlistCount}
+                  </span>
+                  <span className="ml-1 text-sm text-[var(--foreground-muted)]">wishlist</span>
+                </div>
+              )}
               <Link
-                href={`/profile/${user.username}/followers`}
+                to={`/profile/${user.username}/followers`}
                 className="transition-opacity hover:opacity-70"
               >
                 <span className="text-xl font-bold text-[var(--foreground)]">
@@ -83,7 +132,7 @@ export default function ProfileHeader({
                 <span className="ml-1 text-sm text-[var(--foreground-muted)]">abonnés</span>
               </Link>
               <Link
-                href={`/profile/${user.username}/following`}
+                to={`/profile/${user.username}/following`}
                 className="transition-opacity hover:opacity-70"
               >
                 <span className="text-xl font-bold text-[var(--foreground)]">
@@ -98,7 +147,7 @@ export default function ProfileHeader({
           <div>
             {isOwnProfile ? (
               <Link
-                href="/settings"
+                to="/settings"
                 className="flex items-center gap-2 rounded-full border-2 border-[var(--foreground-muted)] px-6 py-2 font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -112,14 +161,32 @@ export default function ProfileHeader({
                 Modifier le profil
               </Link>
             ) : (
-              <FollowButton
-                targetUserId={user.uid}
-                onFollowChange={onFollowChange}
-              />
+              <Button
+                onClick={handleFollowToggle}
+                loading={loading}
+                disabled={loading}
+                variant={following ? 'outline' : 'primary'}
+              >
+                {following ? (
+                  <>
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Abonné
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Suivre
+                  </>
+                )}
+              </Button>
             )}
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

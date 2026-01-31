@@ -1,191 +1,271 @@
-# 🎵 Groovr
+# FillCrate - Réseau social pour passionnés de vinyles
 
-[![CI](https://github.com/lucgulden/groovr/actions/workflows/ci.yml/badge.svg)](https://github.com/lucgulden/groovr/actions/workflows/ci.yml)
+## Vue d'ensemble
 
-Groovr est un réseau social dédié aux passionnés de vinyles. Partagez votre collection, découvrez de nouveaux albums et connectez-vous avec une communauté qui partage votre passion pour la musique et les vinyles.
+FillCrate est un réseau social pour passionnés de vinyles : gestion de collection/wishlist, feed social, follows, likes, commentaires, notifications, recherche d'albums et utilisateurs, création d'albums (Spotify ou manuel) et de pressages vinyles.
 
-## 📋 Description
+**Stack** : React 18 + TypeScript + Vite 7 + Supabase + Tailwind CSS + Framer Motion + Zustand
 
-Groovr permet aux collectionneurs de vinyles de :
-- **Cataloguer leur collection** : Ajoutez vos vinyles, notez vos écoutes et suivez l'évolution de votre collection
-- **Partager avec la communauté** : Postez vos dernières acquisitions, échangez des recommandations
-- **Découvrir de nouveaux albums** : Explorez les collections des autres utilisateurs
-- **Créer une wishlist** : Gardez une trace des vinyles que vous souhaitez acquérir
-
-## 🛠️ Stack technique
-
-- **Frontend** : Next.js 16 (App Router) avec React 19
-- **Langage** : TypeScript
-- **Styling** : Tailwind CSS 4
-- **Backend** : Firebase
-  - Authentication (Firebase Auth)
-  - Database (Firestore)
-  - Storage (Firebase Storage)
-- **API externe** : Spotify API (à venir - Phase 4)
-
-## 🚀 Installation
-
-### Prérequis
-
-- Node.js 20+
-- npm ou yarn
-- Un compte Firebase
-- (Futur) Un compte développeur Spotify
-
-### Étapes d'installation
-
-1. Clonez le repository :
-```bash
-git clone https://github.com/votre-username/groovr.git
-cd groovr
+## Structure du projet
+```
+src/
+├── components/          # Composants UI réutilisables
+├── pages/               # Pages de l'application
+├── guards/              # Route guards (ProtectedRoute, PublicOnlyRoute, HomeRoute)
+├── hooks/               # Hooks personnalisés (useAuth, useFeedPagination, useVinylsPagination, useAlbumSearch, useArtistSearch, useUserSearch, useNotifications)
+├── lib/                 # Fonctions utilitaires (API calls, helpers)
+├── stores/              # State management Zustand
+├── types/               # Types TypeScript
+└── database/            # Migrations SQL
 ```
 
-2. Installez les dépendances :
-```bash
-npm install
+## State Management
+
+### Architecture Zustand
+
+Trois stores centralisés gèrent l'état global de l'application :
+
+| Store | Localisation | Responsabilité |
+|-------|--------------|----------------|
+| `notificationsStore` | `/stores/notificationsStore.ts` | Compteur de notifications non lues + subscription temps réel |
+| `userStore` | `/stores/userStore.ts` | Données du profil utilisateur connecté (photo, username, bio) |
+| `vinylStatsStore` | `/stores/vinylStatsStore.ts` | Compteurs collection/wishlist de l'utilisateur connecté |
+
+### Cycle de vie des stores
+
+**Initialisation** : `App.tsx` initialise tous les stores au login :
+```typescript
+useEffect(() => {
+  if (user) {
+    initializeNotifications(user.id)
+    initializeUser(user.id)
+    initializeVinylStats(user.id)
+  } else {
+    cleanupNotifications()
+    cleanupUser()
+    cleanupVinylStats()
+  }
+}, [user])
 ```
 
-3. Créez un fichier `.env.local` à la racine du projet et ajoutez vos credentials Firebase :
-```env
-NEXT_PUBLIC_FIREBASE_API_KEY=votre_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=votre_project_id.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=votre_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=votre_project_id.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=votre_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=votre_app_id
+**Mise à jour** : Les composants appellent les actions du store après mutation DB :
+```typescript
+// Ajout en collection
+await addVinylToUser(userId, vinylId, 'collection')
+incrementCollection()
+
+// Suppression de la wishlist
+await removeVinylFromUser(userId, vinylId, 'wishlist')
+decrementWishlist()
+
+// Déplacement wishlist → collection
+await moveToCollection(userId, vinylId)
+decrementWishlist()
+incrementCollection()
+
+// Modification du profil
+await updateUserProfile(userId, updates)
+updateAppUser(updates)
 ```
 
-## 🔑 Obtenir les credentials
-
-### Firebase
-
-1. Allez sur [Firebase Console](https://console.firebase.google.com/)
-2. Créez un nouveau projet ou sélectionnez un projet existant
-3. Dans les paramètres du projet, ajoutez une application web
-4. Copiez la configuration Firebase et ajoutez les valeurs dans votre `.env.local`
-5. Activez les services nécessaires :
-   - **Authentication** : Email/Password
-   - **Firestore Database** : Mode production
-   - **Storage** : Mode production
-
-### Spotify (Phase 4 - à venir)
-
-1. Allez sur [Spotify for Developers](https://developer.spotify.com/dashboard)
-2. Créez une nouvelle application
-3. Notez votre Client ID et Client Secret
-4. Ajoutez-les dans votre `.env.local` :
-```env
-SPOTIFY_CLIENT_ID=votre_client_id
-SPOTIFY_CLIENT_SECRET=votre_client_secret
+**Consommation** : Les composants s'abonnent aux stores via hooks :
+```typescript
+const { unreadCount } = useNotificationsStore()
+const { appUser } = useUserStore()
+const { stats } = useVinylStatsStore()
 ```
 
-## 📁 Structure du projet
+### Pattern de synchronisation
 
+1. Mutation en base de données (Supabase)
+2. Action Zustand pour mettre à jour le state local
+3. Re-render automatique des composants abonnés
+4. Pas d'events custom, pas de props drilling
+
+### Composants clés
+
+| Composant | Rôle |
+|-----------|------|
+| `AddVinylModal` | Modal 5 étapes : albumSearch (mode artiste uniquement) → createAlbum → vinylSelection → createVinyl → vinylDetails |
+| `AlbumSearch` | Recherche filtrée par artiste (filtrage client sur les albums de l'artiste) |
+| `VinylCard` | Carte vinyle avec `variant`: `'full'` (badges, détails) ou `'compact'` (titre + artiste) |
+| `VinylGrid` | Grille avec infinite scroll, utilise VinylCard en mode compact |
+| `VinylDetails` | Détails vinyle avec actions contextuelles selon `targetType` et `isOwnProfile` |
+| `AlbumCard` | Carte album (titre, artiste, année) |
+| `ProfileVinyls` | Affiche collection/wishlist, ouvre modal au clic sur vinyle, écoute `vinylStatsStore` pour rafraîchir |
+| `LoadingSpinner` | Spinner de chargement centralisé avec options fullScreen et taille |
+| `PostCard` | Carte post avec optimistic UI et subscriptions temps réel (likes, commentaires) |
+| `CommentItem` | Item commentaire avec support mode `isPending` |
+| `SearchAlbumsTab` | Recherche d'albums avec infinite scroll (pagination offset-based) |
+| `SearchArtistsTab` | Recherche d'artistes avec infinite scroll (pagination offset-based) |
+| `SearchUsersTab` | Recherche d'utilisateurs avec infinite scroll (pagination offset-based) |
+
+### Guards
+
+| Guard | Rôle |
+|-------|------|
+| `ProtectedRoute` | Bloque l'accès si non connecté → redirect `/` |
+| `PublicOnlyRoute` | Bloque l'accès si connecté → redirect `/` |
+| `HomeRoute` | Route `/` dynamique : Landing si déconnecté, Feed si connecté |
+
+## Base de données
+
+### Tables principales
+
+- **users** : uid, email, username, first_name, last_name, photo_url, bio
+- **artists** : id, name, spotify_id?, image_url?, created_at
+- **albums** : id, spotify_id?, musicbrainz_release_group_id?, title, cover_url, year, created_by?
+- **album_artists** : album_id (FK), artist_id (FK), position — **Relation many-to-many albums ↔ artists**
+- **vinyls** : id, album_id (FK), musicbrainz_release_id?, title, cover_url, year, label, catalog_number, country, format, created_by?
+- **vinyl_artists** : vinyl_id (FK), artist_id (FK), position — **Relation many-to-many vinyls ↔ artists**
+- **user_vinyls** : user_id, release_id, type ('collection'|'wishlist') — **un vinyle ne peut JAMAIS être dans les deux**
+- **posts** : user_id, vinyl_id, type ('collection_add'|'wishlist_add'), content?
+- **post_likes**, **comments**, **follows**, **notifications**
+
+### Architecture vinyles
+
+- **Album** = œuvre musicale abstraite (peut avoir plusieurs pressages)
+- **Vinyl** = pressage physique spécifique (lié à un album)
+- **UserVinyl** = relation user ↔ vinyle (collection ou wishlist)
+
+### Architecture artistes
+
+- Les albums et vinyles n'ont **plus de colonne `artist` directe** (migration vers tables de jointure)
+- Relation many-to-many via `album_artists` et `vinyl_artists` (supporte les collaborations)
+- Fonction RPC `ensure_artist(artist_name)` : crée ou récupère un artiste (case-insensitive, déduplique automatiquement)
+- Fonction RPC `create_album_with_artist()` : gère atomiquement la création album + artiste + relation
+- Fonction RPC `create_vinyl_with_artist()` : gère atomiquement la création vinyle + artiste + relation
+- Les requêtes récupèrent les artistes via jointures et reconstituent le champ `artist` (concaténation avec virgules pour les collabs)
+
+### Triggers automatiques
+
+- Création user à l'inscription
+- Création post à l'ajout en collection
+- Notifications : follow, like, comment (+ cleanup à la suppression)
+
+## Routes
+
+### Routes publiques (accessibles déconnecté ET connecté)
 ```
-groovr/
-├── src/
-│   ├── app/                # App Router de Next.js
-│   │   ├── layout.tsx      # Layout principal avec navigation et footer
-│   │   ├── page.tsx        # Page d'accueil
-│   │   └── globals.css     # Styles globaux et configuration Tailwind
-│   ├── components/         # Composants React réutilisables
-│   ├── lib/               # Utilitaires et configurations
-│   │   └── firebase.ts    # Configuration Firebase
-│   └── types/             # Types TypeScript
-├── public/                # Fichiers statiques
-├── .env.local            # Variables d'environnement (non versionné)
-├── .env.example          # Template des variables d'environnement
-├── package.json          # Dépendances et scripts
-└── README.md            # Documentation
+/search                     Recherche albums (par titre), artistes, utilisateurs avec infinite scroll
+/profile/:username          Profil (3 onglets : feed/collection/wishlist)
+/profile/:username/followers|following
 ```
 
-## 💻 Commandes disponibles
-
-### Développement
-```bash
-npm run dev
+### Route dynamique selon auth
 ```
-Lance le serveur de développement sur [http://localhost:3000](http://localhost:3000)
-
-### Build
-```bash
-npm run build
-```
-Crée une build optimisée pour la production
-
-### Production
-```bash
-npm run start
-```
-Lance le serveur de production (après avoir exécuté `npm run build`)
-
-### Qualité du code
-```bash
-npm run lint          # Vérifie la qualité du code avec ESLint
-npm run type-check    # Vérifie les types TypeScript
+/                           Landing si déconnecté, Feed si connecté
 ```
 
-### Tests
-```bash
-npm run test          # Lance les tests unitaires (Vitest)
-npm run test:watch    # Lance les tests en mode watch
-npm run test:e2e      # Lance les tests E2E (Playwright)
-npm run test:e2e:ui   # Lance les tests E2E en mode UI
+### Routes "public only" (bloquées si connecté)
+```
+/signup, /login             Auth
 ```
 
-## 🎨 Design
+### Routes protégées (bloquées si déconnecté)
+```
+/notifications              
+/settings                   Modification profil
+```
 
-Groovr utilise un design dark mode par défaut, inspiré de l'ambiance des vinyles et des soirées d'écoute :
+## Logique contextuelle AddVinylModal
 
-### Palette de couleurs
-- **Primary** : Orange `#E67E22` - Énergie et passion musicale
-- **Secondary** : Marron `#8B4513` - Référence au vinyle et au vintage
-- **Background** : Noir `#1A1A1A` - Ambiance dark
-- **Text** : Blanc cassé `#F5F5F5` - Confort de lecture
+### Props
+```typescript
+interface AddVinylModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  userId: string;
+  targetType?: 'collection' | 'wishlist';  // Contexte d'ajout
+  initialAlbum?: Album;                     // Démarre à vinylSelection
+  initialStep?: ModalStep;                  // Démarre à une étape spécifique
+  initialVinyl?: Vinyl;                     // Démarre à vinylDetails
+  isOwnProfile?: boolean;                   // Actions de gestion vs ajout
+  artist?: Artist;                          // Requis pour albumSearch, démarre à createAlbum si absent
+}
+```
 
-### Inspiration
-- Interface type Spotify pour l'expérience utilisateur
-- Feed social type Instagram pour le partage de contenu
-- Organisation type Discogs pour les collections
+### Comportement VinylDetails
 
-## 🗺️ Roadmap
+| Contexte | Condition | Actions |
+|----------|-----------|---------|
+| Mon profil > Collection | - | "Retirer de ma collection" (decrementCollection) |
+| Mon profil > Wishlist | - | "J'ai acheté !" (decrementWishlist + incrementCollection) + "Retirer de ma wishlist" (decrementWishlist) |
+| Profil autre / Search | En collection | Message "déjà possédé" |
+| Profil autre / Search | En wishlist | "Déplacer vers la collection" (decrementWishlist + incrementCollection) |
+| Profil autre / Search | Non possédé | 2 boutons : collection (incrementCollection) + wishlist (incrementWishlist) |
 
-### Phase 1 - Setup et authentification (en cours)
-- [x] Configuration du projet Next.js
-- [x] Configuration Firebase
-- [x] Design system et thème
-- [x] Layout et navigation
-- [X] Pages d'authentification (login/signup)
+## Types principaux
+```typescript
+interface UserVinylWithDetails extends UserVinyl {
+  vinyl: Vinyl;
+  album: Album;  // Jointure incluse
+}
 
-### Phase 2 - Gestion de la collection
-- [X] Création de profil utilisateur
-- [X] Ajout manuel de vinyles
-- [X] Visualisation de la collection
-- [X] Système de wishlist
+type UserVinylType = 'collection' | 'wishlist';
+```
 
-### Phase 3 - Social features
-- [X] Feed d'actualités
-- [X] Posts et partages
-- [X] Commentaires et likes
-- [X] Système de follow
+## Patterns et conventions
 
-### Phase 4 - Intégration Spotify
-- [X] Recherche d'albums via Spotify API
-- [X] Récupération des métadonnées
-- [ ] Recommandations personnalisées
+### Modal avec état initial
+```typescript
+<AddVinylModal
+  key={isModalOpen ? 'open' : 'closed'}  // Force remount pour reset
+  initialStep="createAlbum"              // Ouvre directement à création
+  artist={selectedArtist}                // Requis pour albumSearch
+  // ...
+/>
+```
 
-## 🤝 Contribution
+### VinylImage
+```typescript
+// ✅ Utiliser opacity (pas hidden avec loading="lazy")
+<img className={loaded ? 'opacity-100' : 'opacity-0'} loading="lazy" />
+```
 
-Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou une pull request.
+## Variables CSS
+```css
+--background: #1A1A1A
+--background-light: #242424
+--background-lighter: #2A2A2A
+--foreground: #F5F5F5
+--foreground-muted: #A0A0A0
+--primary: #E67E22 (orange)
+--secondary: #8B4513 (marron)
+```
 
-## 📄 Licence
+## Libs utilitaires
 
-Ce projet est sous licence MIT.
+| Fichier | Fonctions clés |
+|---------|----------------|
+| `vinyls.ts` | getUserVinyls, addVinylToUser, removeVinylFromUser, moveToCollection, searchAlbums (titre uniquement, offset-based), searchArtists (offset-based), getAlbumsByArtist, createAlbum (via RPC), createVinyl (via RPC) |
+| `search.ts` | searchUsers (offset-based) |
+| `spotify.ts` | searchSpotifyAlbums, getSpotifyAlbum (Client Credentials Flow) |
+| `covers.ts` | uploadAlbumCover, uploadVinylCover (compression WebP 600px) |
+| `storage.ts` | uploadProfilePhoto |
 
-## 📧 Contact
+## Points d'attention
 
-Pour toute question ou suggestion, contactez-nous via les issues GitHub.
+1. **Ordre des routes** : spécifiques AVANT génériques
+2. **Policies Supabase** : INSERT sur users, UPDATE sur albums/vinyls
+3. **Règle collection/wishlist** : jamais les deux en même temps
+4. **Images** : opacity au lieu de hidden avec lazy loading
+5. **Modal reset** : utiliser `key` pour forcer le remount
+6. **Covers Spotify** : URL stockée directement (pas de copie)
+7. **Route guards** : ProtectedRoute gère le loading centralisé, pas de checks manuels dans les pages
+8. **State management** : Zustand pour état global, pas d'events custom (`window.dispatchEvent`)
+9. **Realtime** : Activer les tables dans Supabase publication pour temps réel
+10. **Infinite scroll** : IntersectionObserver avec pagination offset-based pour la recherche
+
+## Style d'interaction préféré
+
+- ✅ Questions de clarification AVANT de coder
+- ✅ Procéder étape par étape avec validation
+- ✅ Modifications ciblées plutôt que fichiers complets
+- ✅ Un composant = un fichier
+- ✅ Réutiliser l'existant
 
 ---
 
-Fait avec ❤️ par les passionnés de vinyles
+**Dernière mise à jour** : 31 janvier 2026

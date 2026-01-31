@@ -1,177 +1,172 @@
-import {
-  collection,
-  doc,
-  getDocs,
-  setDoc,
-  deleteDoc,
-  updateDoc,
-  increment,
-  query,
-  where,
-  orderBy,
-  serverTimestamp,
-  onSnapshot,
-  Unsubscribe,
-} from 'firebase/firestore';
-import { db } from './firebase';
-import { getUserByUid } from './user';
-import type { Comment, CommentWithUser } from '@/types/comment';
-
-const COMMENTS_COLLECTION = 'comments';
-const POSTS_COLLECTION = 'posts';
+import { supabase } from '../supabaseClient'
+import { toCamelCase, toSnakeCase } from '../utils/caseConverter'
+import type { CommentWithUser } from '../types/comment'
 
 /**
- * Ajoute un commentaire à un post
+ * Ajouter un commentaire à un post
  */
 export async function addComment(
   postId: string,
   userId: string,
-  text: string
-): Promise<Comment> {
-  try {
-    if (!text.trim()) {
-      throw new Error('Le commentaire ne peut pas être vide');
-    }
+  content: string,
+): Promise<void> {
+  // Convertir en snake_case pour la BDD
+  const dbData = toSnakeCase({
+    postId,
+    userId,
+    content,
+  })
 
-    const newCommentRef = doc(collection(db, COMMENTS_COLLECTION));
-    const commentData = {
-      postId,
-      userId,
-      text: text.trim(),
-      createdAt: serverTimestamp(),
-    };
+  const { error } = await supabase
+    .from('comments')
+    .insert(dbData)
 
-    await setDoc(newCommentRef, commentData);
-
-    // Incrémenter le compteur de commentaires du post
-    const postRef = doc(db, POSTS_COLLECTION, postId);
-    await updateDoc(postRef, {
-      commentsCount: increment(1),
-    });
-
-    console.log(`[Comment] ${userId} commented on post ${postId}`);
-
-    return {
-      id: newCommentRef.id,
-      ...commentData,
-      createdAt: commentData.createdAt,
-    } as Comment;
-  } catch (error) {
-    console.error('Erreur lors de l\'ajout du commentaire:', error);
-    throw new Error('Impossible d\'ajouter le commentaire');
+  if (error) {
+    console.error('Erreur lors de l\'ajout du commentaire:', error)
+    throw error
   }
 }
 
 /**
- * Récupère les commentaires d'un post
- * Ordre : createdAt ASC (du plus ancien au plus récent)
+ * Supprimer un commentaire
  */
-export async function getPostComments(postId: string): Promise<CommentWithUser[]> {
-  try {
-    const commentsRef = collection(db, COMMENTS_COLLECTION);
-    const q = query(
-      commentsRef,
-      where('postId', '==', postId),
-      orderBy('createdAt', 'asc')
-    );
+export async function deleteComment(commentId: string): Promise<void> {
+  const { error } = await supabase
+    .from('comments')
+    .delete()
+    .eq('id', commentId)
 
-    const querySnapshot = await getDocs(q);
-    const comments: Comment[] = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Comment[];
-
-    // Récupérer les infos des utilisateurs
-    const commentsWithUsers = await Promise.all(
-      comments.map(async (comment) => {
-        const user = await getUserByUid(comment.userId);
-        if (!user) {
-          console.warn(`User ${comment.userId} non trouvé`);
-          return null;
-        }
-        return {
-          ...comment,
-          user,
-        } as CommentWithUser;
-      })
-    );
-
-    return commentsWithUsers.filter(
-      (comment): comment is CommentWithUser => comment !== null
-    );
-  } catch (error) {
-    console.error('Erreur lors de la récupération des commentaires:', error);
-    throw new Error('Impossible de récupérer les commentaires');
+  if (error) {
+    console.error('Erreur lors de la suppression du commentaire:', error)
+    throw error
   }
 }
 
 /**
- * Supprime un commentaire
- */
-export async function deleteComment(commentId: string, postId: string): Promise<void> {
-  try {
-    const commentRef = doc(db, COMMENTS_COLLECTION, commentId);
-    await deleteDoc(commentRef);
-
-    // Décrémenter le compteur de commentaires du post
-    const postRef = doc(db, POSTS_COLLECTION, postId);
-    await updateDoc(postRef, {
-      commentsCount: increment(-1),
-    });
-
-    console.log(`[Comment] Deleted comment ${commentId}`);
-  } catch (error) {
-    console.error('Erreur lors de la suppression du commentaire:', error);
-    throw new Error('Impossible de supprimer le commentaire');
-  }
-}
-
-/**
- * Subscribe aux commentaires d'un post (real-time)
+ * S'abonner aux commentaires d'un post en temps réel
  */
 export function subscribeToPostComments(
   postId: string,
-  onUpdate: (comments: CommentWithUser[]) => void,
-  onError?: (error: Error) => void
-): Unsubscribe {
-  const commentsRef = collection(db, COMMENTS_COLLECTION);
-  const q = query(
-    commentsRef,
-    where('postId', '==', postId),
-    orderBy('createdAt', 'asc')
-  );
+  onData: (comments: CommentWithUser[]) => void,
+  onError: (error: Error) => void,
+): () => void {
+  // Charger les commentaires initiaux
+  const loadComments = async () => {
+    const { data, error } = await supabase
+      .from('comments')
+      .select(`
+        id,
+        user_id,
+        post_id,
+        content,
+        created_at,
+        user:users!user_id (
+          uid,
+          username,
+          photo_url
+        )
+      `)
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true })
 
-  return onSnapshot(
-    q,
-    async (querySnapshot) => {
-      try {
-        const comments: Comment[] = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Comment[];
-
-        const commentsWithUsers = await Promise.all(
-          comments.map(async (comment) => {
-            const user = await getUserByUid(comment.userId);
-            if (!user) return null;
-            return { ...comment, user } as CommentWithUser;
-          })
-        );
-
-        const filtered = commentsWithUsers.filter(
-          (comment): comment is CommentWithUser => comment !== null
-        );
-        onUpdate(filtered);
-      } catch (error) {
-        if (onError) {
-          onError(error as Error);
-        }
-      }
-    },
-    (error) => {
-      if (onError) {
-        onError(error);
-      }
+    if (error) {
+      onError(error)
+      return
     }
-  );
+
+    // Convertir en camelCase
+    const comments = toCamelCase<CommentWithUser[]>(data || [])
+    
+    // Restructurer pour matcher CommentWithUser
+    const transformedComments: CommentWithUser[] = comments.map((comment: any) => ({
+      id: comment.id,
+      userId: comment.userId,
+      postId: comment.postId,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      user: {
+        username: comment.user.username,
+        photoURL: comment.user.photoUrl,
+      },
+    }))
+
+    onData(transformedComments)
+  }
+
+  // Charger immédiatement
+  loadComments()
+
+  // S'abonner aux changements en temps réel
+  const channel = supabase
+    .channel(`comments:${postId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*', // INSERT, UPDATE, DELETE
+        schema: 'public',
+        table: 'comments',
+        filter: `post_id=eq.${postId}`,
+      },
+      () => {
+        // Recharger tous les commentaires quand il y a un changement
+        loadComments()
+      },
+    )
+    .subscribe()
+
+  // Fonction de désabonnement
+  return () => {
+    channel.unsubscribe()
+  }
+}
+
+/**
+ * S'abonner au compteur de commentaires d'un post en temps réel
+ * Plus léger que subscribeToPostComments car ne charge pas les commentaires complets
+ */
+export function subscribeToPostCommentsCount(
+  postId: string,
+  onUpdate: (count: number) => void,
+  onError: (error: Error) => void,
+): () => void {
+  // Charger le compteur initial
+  const loadCount = async () => {
+    const { count, error } = await supabase
+      .from('comments')
+      .select('*', { count: 'exact', head: true })
+      .eq('post_id', postId)
+
+    if (error) {
+      onError(error)
+      return
+    }
+
+    onUpdate(count || 0)
+  }
+
+  // Charger immédiatement
+  loadCount()
+
+  // S'abonner aux changements en temps réel
+  const channel = supabase
+    .channel(`comments-count:${postId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*', // INSERT, UPDATE, DELETE
+        schema: 'public',
+        table: 'comments',
+        filter: `post_id=eq.${postId}`,
+      },
+      () => {
+        // Recharger le compteur quand il y a un changement
+        loadCount()
+      },
+    )
+    .subscribe()
+
+  // Fonction de désabonnement
+  return () => {
+    channel.unsubscribe()
+  }
 }

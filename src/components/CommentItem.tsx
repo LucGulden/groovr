@@ -1,74 +1,84 @@
-'use client';
-
-import React, { useState } from 'react';
-import Link from 'next/link';
-import Avatar from './Avatar';
-import { getRelativeTimeString } from '@/lib/date-utils';
-import { deleteComment } from '@/lib/comments';
-import type { CommentWithUser } from '@/types/comment';
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import Avatar from './Avatar'
+import { deleteComment } from '../lib/comments'
+import { getRelativeTimeString } from '../utils/date-utils'
+import type { CommentWithUser } from '../types/comment'
 
 interface CommentItemProps {
-  comment: CommentWithUser;
-  currentUserId?: string;
-  onDelete?: () => void;
+  comment: CommentWithUser
+  currentUserId?: string
+  isPending?: boolean
+  onDelete: () => void
 }
 
-export default function CommentItem({ comment, currentUserId, onDelete }: CommentItemProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const isOwner = currentUserId === comment.userId;
+export default function CommentItem({ 
+  comment, 
+  currentUserId, 
+  isPending = false,
+  onDelete 
+}: CommentItemProps) {
+  const [isDeleting, setIsDeleting] = useState(false)
+  const isOwner = currentUserId === comment.userId
 
   const handleDelete = async () => {
     if (!window.confirm('Supprimer ce commentaire ?')) {
-      return;
+      return
     }
 
-    setIsDeleting(true);
+    setIsDeleting(true)
     try {
-      await deleteComment(comment.id, comment.postId);
+      await deleteComment(comment.id)
       if (onDelete) {
-        onDelete();
+        onDelete()
       }
     } catch (error) {
-      console.error('Erreur lors de la suppression du commentaire:', error);
-      alert('Impossible de supprimer le commentaire');
+      console.error('Erreur lors de la suppression du commentaire:', error)
+      alert('Impossible de supprimer le commentaire')
     } finally {
-      setIsDeleting(false);
+      setIsDeleting(false)
     }
-  };
+  }
 
   return (
-    <div className="flex gap-3 py-3">
+    <div 
+      className={`flex gap-3 py-3 transition-opacity ${isPending ? 'opacity-50' : 'opacity-100'}`}
+    >
       {/* Avatar */}
-      <Link href={`/profile/${comment.user.username}`} className="flex-shrink-0">
-        <Avatar src={comment.user.photoURL} username={comment.user.username} size="sm" />
+      <Link to={`/profile/${comment.user.username}`} className="flex-shrink-0">
+        <Avatar 
+          src={comment.user.photoURL} 
+          username={comment.user.username} 
+          size="sm" 
+        />
       </Link>
 
       {/* Contenu */}
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
           <Link
-            href={`/profile/${comment.user.username}`}
+            to={`/profile/${comment.user.username}`}
             className="font-semibold text-[var(--foreground)] hover:text-[var(--primary)] transition-colors"
           >
             {comment.user.username}
           </Link>
           <span className="text-xs text-[var(--foreground-muted)]">
-            {getRelativeTimeString(comment.createdAt)}
+            {isPending ? 'Publication...' : getRelativeTimeString(comment.createdAt)}
           </span>
         </div>
 
         <p className="mt-1 text-[var(--foreground)] break-words whitespace-pre-wrap">
-          {comment.text}
+          {comment.content}
         </p>
       </div>
 
-      {/* Bouton supprimer si c'est son commentaire */}
-      {isOwner && (
+      {/* Bouton supprimer si c'est son commentaire (pas visible si pending) */}
+      {isOwner && !isPending && (
         <button
           onClick={handleDelete}
           disabled={isDeleting}
           className="flex-shrink-0 text-[var(--foreground-muted)] hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={isDeleting ? "Suppression en cours..." : "Supprimer"}
+          title={isDeleting ? 'Suppression en cours...' : 'Supprimer'}
         >
           {isDeleting ? (
             <svg
@@ -110,5 +120,5 @@ export default function CommentItem({ comment, currentUserId, onDelete }: Commen
         </button>
       )}
     </div>
-  );
+  )
 }
