@@ -130,3 +130,24 @@ export async function getUserByUid(uid: string): Promise<User | null> {
     return null
   }
 }
+
+export async function getUserByUsername(username: string): Promise<User | null> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .single()
+
+    if (error) {
+      console.error('Erreur lors de la récupération de l\'utilisateur:', error)
+      return null
+    }
+
+    // Convertir en camelCase
+    return toCamelCase<User>(data)
+  } catch (err) {
+    console.error('Erreur inattendue:', err)
+    return null
+  }
+}

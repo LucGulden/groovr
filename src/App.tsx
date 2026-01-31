@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useNotificationsStore } from './stores/notificationsStore'
 import { useUserStore } from './stores/userStore'
@@ -20,26 +20,33 @@ import HomeRoute from './guards/HomeRoute'
 
 function App() {
   const { user } = useAuth()
+  const previousUserIdRef = useRef<string | null>(null)
+  
   const { initialize: initializeNotifications, cleanup: cleanupNotifications } = useNotificationsStore()
   const { initialize: initializeUser, cleanup: cleanupUser } = useUserStore()
   const { initialize: initializeVinylStats, cleanup: cleanupVinylStats } = useVinylStatsStore()
 
   // Initialiser les stores quand l'utilisateur se connecte
   useEffect(() => {
-    if (user) {
-      initializeNotifications(user.id)
-      initializeUser(user.id)
-      initializeVinylStats(user.id)
-    } else {
-      cleanupNotifications()
-      cleanupUser()
-      cleanupVinylStats()
-    }
+    const currentUserId = user?.id || null
+    const previousUserId = previousUserIdRef.current
 
-    return () => {
-      cleanupNotifications()
-      cleanupUser()
-      cleanupVinylStats()
+    // ✅ Ne faire quelque chose que si l'userId a vraiment changé
+    if (currentUserId !== previousUserId) {
+      if (currentUserId) {
+        // Connexion
+        initializeNotifications(currentUserId)
+        initializeUser(currentUserId)
+        initializeVinylStats(currentUserId)
+      } else {
+        // Déconnexion
+        cleanupNotifications()
+        cleanupUser()
+        cleanupVinylStats()
+      }
+
+      // Mettre à jour la référence
+      previousUserIdRef.current = currentUserId
     }
   }, [user, initializeNotifications, cleanupNotifications, initializeUser, cleanupUser, initializeVinylStats, cleanupVinylStats])
 

@@ -21,9 +21,11 @@ export const useNotificationsStore = create<NotificationsStore>((set, get) => ({
   unsubscribe: null,
 
   initialize: async (userId: string) => {
-    // Éviter les doubles subscriptions
-    if (get().isInitialized) {
-      return
+    // ✅ Cleanup d'abord si déjà initialisé
+    const { isInitialized, unsubscribe } = get()
+    if (isInitialized && unsubscribe) {
+      console.log('🧹 Cleaning up existing subscription before reinit')
+      unsubscribe()
     }
 
     try {
@@ -34,9 +36,10 @@ export const useNotificationsStore = create<NotificationsStore>((set, get) => ({
       // 2. Subscribe aux nouvelles notifications en temps réel
       const unsubscribeFn = subscribeToNotifications(
         userId,
-        () => {
-          // Incrémenter le compteur quand une nouvelle notif arrive
-          set((state) => ({ unreadCount: state.unreadCount + 1 }))
+        async () => {
+          // ✅ Recharger le count complet (plus robuste que increment)
+          const newCount = await getUnreadCount(userId)
+          set({ unreadCount: newCount })
         },
         (error) => {
           console.error('❌ Erreur subscription notifications:', error)

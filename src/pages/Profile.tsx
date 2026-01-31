@@ -12,6 +12,7 @@ import { getVinylStats } from '../lib/vinyls'
 import { type User } from '../types/user'
 import AddVinylModal from '../components/AddVinylModal'
 import LoadingSpinner from '../components/LoadingSpinner'
+import { getUserByUsername } from '../lib/user'
 
 interface ProfileStats {
   releasesCount: number;
@@ -35,7 +36,7 @@ export default function ProfilePage() {
   })
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
-  const [activeTab, setActiveTab] = useState<'feed' | 'collection' | 'wishlist'>('collection')
+  const [activeTab, setActiveTab] = useState<'feed' | 'collection' | 'wishlist'>('feed')
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const isOwnProfile = currentUser?.id === profileUser?.uid
@@ -58,19 +59,14 @@ export default function ProfilePage() {
         }
 
         // Sinon, récupérer l'utilisateur par username depuis la DB
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('username', username)
-          .single()
+        const user = await getUserByUsername(username)
 
-        if (error || !data) {
-          console.error('Erreur lors du chargement du profil:', error)
+        if (!user) {
           setNotFound(true)
           return
         }
 
-        setProfileUser(data)
+        setProfileUser(user)
       } catch (error) {
         console.error('Erreur lors du chargement du profil:', error)
         setNotFound(true)

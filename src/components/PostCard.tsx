@@ -193,14 +193,14 @@ export default function PostCard({
     <div className="rounded-2xl border border-[var(--background-lighter)] bg-[var(--background-light)] p-6 transition-shadow hover:shadow-lg">
       {/* Header */}
       <div className="flex items-start gap-3 mb-4">
-        <Link to={`/profile/${post.userId}`} className="flex-shrink-0">
+        <Link to={`/profile/${post.user.username}`} className="flex-shrink-0">
           <Avatar src={post.user.photoURL} username={post.user.username} size="md" />
         </Link>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <Link
-              to={`/profile/${post.userId}`}
+              to={`/profile/${post.user.username}`}
               className="font-semibold text-[var(--foreground)] hover:text-[var(--primary)] transition-colors"
             >
               {post.user.username}
@@ -312,7 +312,13 @@ export default function PostCard({
 
           {!currentUserId && (
             <p className="text-sm text-[var(--foreground-muted)] text-center py-2">
-              Connectez-vous pour commenter
+              <Link 
+                to="/login" 
+                className="text-[var(--primary)] hover:underline"
+              >
+                Connectez-vous
+              </Link>
+              {' '}pour commenter
             </p>
           )}
         </div>

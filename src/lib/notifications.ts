@@ -164,7 +164,7 @@ export function subscribeToNotifications(
   onError?: (error: Error) => void,
 ) {
   const channel = supabase
-    .channel(`notifs-${userId}-${Date.now()}`)
+    .channel(`notifications:${userId}`)  // ← Pas de Date.now() !
     .on(
       'postgres_changes',
       {
@@ -181,7 +181,7 @@ export function subscribeToNotifications(
       if (status === 'SUBSCRIBED') {
         console.log('✅ Subscribed to notifications')
       } else if (status === 'CHANNEL_ERROR') {
-        console.error('❌ Channel error details:', err)  // ← Logger les détails
+        console.error('❌ Channel error:', err)
         onError?.(new Error(`Error subscribing to notifications: ${err?.message || 'Unknown error'}`))
       } else if (status === 'TIMED_OUT') {
         console.error('❌ Subscription timed out')

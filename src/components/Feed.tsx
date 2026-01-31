@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import PostCard from './PostCard'
 import { useFeedPagination } from '../hooks/useFeedPagination'
 import Button from './Button'
+import { useAuth } from '../hooks/useAuth'
 
 interface FeedProps {
   userId: string
@@ -10,6 +11,8 @@ interface FeedProps {
 }
 
 export default function Feed({ userId, profileFeed }: FeedProps) {
+  const { user: currentUser } = useAuth()
+
   const {
     posts,
     loading,
@@ -230,7 +233,7 @@ export default function Feed({ userId, profileFeed }: FeedProps) {
         <PostCard
           key={post.id}
           post={post}
-          currentUserId={userId}
+          currentUserId={currentUser?.id}
           priority={index === 0}
         />
       ))}
