@@ -12,7 +12,7 @@ src/
 ├── components/          # Composants UI réutilisables
 ├── pages/               # Pages de l'application
 ├── guards/              # Route guards (ProtectedRoute, PublicOnlyRoute, HomeRoute)
-├── hooks/               # Hooks personnalisés (useAuth, useFeedPagination, useVinylsPagination, useNotifications)
+├── hooks/               # Hooks personnalisés (useAuth, useFeedPagination, useVinylsPagination, useAlbumSearch, useArtistSearch, useUserSearch, useNotifications)
 ├── lib/                 # Fonctions utilitaires (API calls, helpers)
 ├── stores/              # State management Zustand
 ├── types/               # Types TypeScript
@@ -86,7 +86,8 @@ const { stats } = useVinylStatsStore()
 
 | Composant | Rôle |
 |-----------|------|
-| `AddVinylModal` | Modal 5 étapes : albumSearch → createAlbum → vinylSelection → createVinyl → vinylDetails |
+| `AddVinylModal` | Modal 5 étapes : albumSearch (mode artiste uniquement) → createAlbum → vinylSelection → createVinyl → vinylDetails |
+| `AlbumSearch` | Recherche filtrée par artiste (filtrage client sur les albums de l'artiste) |
 | `VinylCard` | Carte vinyle avec `variant`: `'full'` (badges, détails) ou `'compact'` (titre + artiste) |
 | `VinylGrid` | Grille avec infinite scroll, utilise VinylCard en mode compact |
 | `VinylDetails` | Détails vinyle avec actions contextuelles selon `targetType` et `isOwnProfile` |
@@ -95,6 +96,9 @@ const { stats } = useVinylStatsStore()
 | `LoadingSpinner` | Spinner de chargement centralisé avec options fullScreen et taille |
 | `PostCard` | Carte post avec optimistic UI et subscriptions temps réel (likes, commentaires) |
 | `CommentItem` | Item commentaire avec support mode `isPending` |
+| `SearchAlbumsTab` | Recherche d'albums avec infinite scroll (pagination offset-based) |
+| `SearchArtistsTab` | Recherche d'artistes avec infinite scroll (pagination offset-based) |
+| `SearchUsersTab` | Recherche d'utilisateurs avec infinite scroll (pagination offset-based) |
 
 ### Guards
 
@@ -143,7 +147,7 @@ const { stats } = useVinylStatsStore()
 
 ### Routes publiques (accessibles déconnecté ET connecté)
 ```
-/search                     Recherche albums, artistes, utilisateurs
+/search                     Recherche albums (par titre), artistes, utilisateurs avec infinite scroll
 /profile/:username          Profil (3 onglets : feed/collection/wishlist)
 /profile/:username/followers|following
 ```
@@ -178,7 +182,7 @@ interface AddVinylModalProps {
   initialStep?: ModalStep;                  // Démarre à une étape spécifique
   initialVinyl?: Vinyl;                     // Démarre à vinylDetails
   isOwnProfile?: boolean;                   // Actions de gestion vs ajout
-  artist?: Artist;                          // Filtre par artiste dans AlbumSearch
+  artist?: Artist;                          // Requis pour albumSearch, démarre à createAlbum si absent
 }
 ```
 
@@ -209,6 +213,7 @@ type UserVinylType = 'collection' | 'wishlist';
 <AddVinylModal
   key={isModalOpen ? 'open' : 'closed'}  // Force remount pour reset
   initialStep="createAlbum"              // Ouvre directement à création
+  artist={selectedArtist}                // Requis pour albumSearch
   // ...
 />
 ```
@@ -234,7 +239,8 @@ type UserVinylType = 'collection' | 'wishlist';
 
 | Fichier | Fonctions clés |
 |---------|----------------|
-| `vinyls.ts` | getUserVinyls, addVinylToUser, removeVinylFromUser, moveToCollection, searchAlbums, searchArtists, getAlbumsByArtist, createAlbum (via RPC), createVinyl (via RPC) |
+| `vinyls.ts` | getUserVinyls, addVinylToUser, removeVinylFromUser, moveToCollection, searchAlbums (titre uniquement, offset-based), searchArtists (offset-based), getAlbumsByArtist, createAlbum (via RPC), createVinyl (via RPC) |
+| `search.ts` | searchUsers (offset-based) |
 | `spotify.ts` | searchSpotifyAlbums, getSpotifyAlbum (Client Credentials Flow) |
 | `covers.ts` | uploadAlbumCover, uploadVinylCover (compression WebP 600px) |
 | `storage.ts` | uploadProfilePhoto |
@@ -250,6 +256,7 @@ type UserVinylType = 'collection' | 'wishlist';
 7. **Route guards** : ProtectedRoute gère le loading centralisé, pas de checks manuels dans les pages
 8. **State management** : Zustand pour état global, pas d'events custom (`window.dispatchEvent`)
 9. **Realtime** : Activer les tables dans Supabase publication pour temps réel
+10. **Infinite scroll** : IntersectionObserver avec pagination offset-based pour la recherche
 
 ## Style d'interaction préféré
 
